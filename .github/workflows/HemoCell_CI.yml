@@ -1,22 +1,58 @@
 name: HemoCell_CI
 
 on:
+# there is no way trigger the workflow when a pull request is merged.
+# however, since a merged pull always results in a push, we use the push event here.
   push:
-    branches: [ "develop" ]
+    branches: 
+      - master
+      - develop
+      
+# enable github workflow to run whenever a PR is created on any branch
+# that will be afterwards merged on develop 
   pull_request:
-    branches: [ "develop" ]
+    types: [opened, reopened, review_requested]
 
 jobs:
-  before_script:
+
+  hemocell_ci_workflow:
 
     runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install hemocell dependencies and build hemocell
-      run: |
-        apt-get update --yes -qq
-        apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev libhdf5-dev patch wget ccache
-        
 
+    - name: Install hemocell dependencies and create artifacts
+      run: |
+        sudo apt-get update --yes -qq
+        sudo apt-get install --yes -qq git g++ cmake make libopenmpi-dev libhdf5-mpi-dev \
+                             libhdf5-dev patch wget ccache
+        ./setup.sh > /dev/null
+        mkdir -p build && cd build
+        cmake .. 
+      
+    - name : build hemocell and examples
+      run : |
+        while read target; do
+          cmake --build . --target ${target}
+        done < <(cut -d '"' -f2 < ../examples/CMakeLists.txt)
+      working-directory: build
+    
+    - name : run validation tests
+      run : |
+        cmake --build . --target hemocell_test
+        export GTEST_FILTER="Validation*"
+        ctest -V
+      working-directory: build
+
+    - name : build documentation
+      run : |
+        sudo apt-get -y update
+        sudo apt-get install -y make doxygen graphviz fonts-freefont-ttf
+        pip install -r requirements.txt
+        cd user_guide
+        make clean
+        make html
+      working-directory: doc
+      
   
