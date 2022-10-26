@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace hemo;
 
+
+const unsigned warmup = 100;
 const T expected_deformation = 0.0127918;
 
 TEST(Validation, oneCellShear)
@@ -82,11 +84,12 @@ TEST(Validation, oneCellShear)
 
   if (hemocell.iter == 0) { 
     pcout << "(OneCellShear) fresh start: warming up cell-free fluid domain for "  << (*cfg)["parameters"]["warmup"].read<plint>() << " iterations..." << endl; 
-    for (plint itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<plint>(); ++itrt) {  
+    for (unsigned int itrt = 0; itrt < (*cfg)["parameters"]["warmup"].read<unsigned int>(); ++itrt) {  
       hemocell.lattice->collideAndStream();  
     } 
   }
 
+  unsigned int max_iteration = (*cfg)["domain"]["tmax"].read<unsigned int>();
   pcout << "(OneCellShea) Shear rate: " << (*cfg)["domain"]["shearrate"].read<T>() << " s^-1." << endl;
 
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
@@ -95,12 +98,13 @@ TEST(Validation, oneCellShear)
   // Get undeformed cell values
   CellInformationFunctionals::calculateCellVolume(&hemocell);
   CellInformationFunctionals::calculateCellArea(&hemocell);
-
+  T volume_eq = (CellInformationFunctionals::info_per_cell[0].volume)/pow(1e-6/param::dx,3);
+  T surface_eq = (CellInformationFunctionals::info_per_cell[0].area)/pow(1e-6/param::dx,2);
   T D0 = 2.0 * (*cfg)["ibm"]["radius"].read<T>() * 1e6;
 
   T def_idx;
 
-  while (hemocell.iter < tmax ) {
+  while (hemocell.iter < max_iteration) {
     
     hemocell.iterate();
 
@@ -118,6 +122,8 @@ TEST(Validation, oneCellShear)
       T largest_diam = (CellInformationFunctionals::info_per_cell[0].stretch)/(1e-6/param::dx);
       T rel_D2 = (largest_diam/D0)*(largest_diam/D0);
       def_idx = (rel_D2 - 1.0) / (rel_D2 + 1.0) * 100.0;
+
+
 
       CellInformationFunctionals::clear_list();
 
