@@ -2,7 +2,7 @@
 <hemocell>
 
 <parameters>
-    <warmup> 0 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
+    <warmup> 100 </warmup> <!-- Number of LBM iterations to prepare fluid field. -->
 </parameters>
 
 
@@ -21,9 +21,8 @@
 </domain>
 
 <sim>
-    <tmax> 100000 </tmax> <!-- total number of iterations -->
-    <tmeas> 2000 </tmeas> <!-- interval after which data is written --> 
-    <tcheckpoint>500000</tcheckpoint>
+    <tmax> 1000 </tmax> <!-- total number of iterations -->
+    <tmeas> 200 </tmeas> <!-- interval after which data is written --> 
 </sim>
 
 </hemocell>
