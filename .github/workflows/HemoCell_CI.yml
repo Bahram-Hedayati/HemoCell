@@ -18,7 +18,6 @@ jobs:
   hemocell_ci_workflow:
 
     runs-on: self-hosted
-
     steps:
     - uses: actions/checkout@v3
 
@@ -46,14 +45,13 @@ jobs:
         mpirun -n 4 hemocell_test
       working-directory: build
 
-    - name : build and run performance tests
+    - name : Run performance tests
       run : |
+        cd ..
         export GTEST_FILTER="Performance*"
         mpirun -n 1 hemocell_test tests/performance/configs/config-1.xml
         mpirun -n 2 hemocell_test tests/performance/configs/config-2.xml
         mpirun -n 6 hemocell_test tests/performance/configs/config-6.xml
-      working-directory: HemoCell-dev
-
 
     - name : build documentation
       run : |
