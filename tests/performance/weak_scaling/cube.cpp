@@ -38,7 +38,7 @@ constexpr float milli_to_secs = 0.001f;
 
 constexpr float exec_time_1_proc = 0.002f;
 constexpr float exec_time_2_procs = 0.003f;
-constexpr float exec_time_6_procs = 0.005f;
+constexpr float exec_time_6_procs = 0.007f;
 
 constexpr float offset = 0.15f;
 
