@@ -62,7 +62,7 @@ class ValidationForceDisplacement
 TEST_P(ValidationForceDisplacement, StretchCell) {
   auto parameters = GetParam();
   char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"validation/stretch_cell/config_stretch_cell.xml";
+  char *inp = (char *)"tests/validation/stretch_cell/config_stretch_cell.xml";
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config *cfg = hemocell.cfg;
@@ -97,10 +97,10 @@ TEST_P(ValidationForceDisplacement, StretchCell) {
   hemocell.lattice->initialize();
 
   hemocell.initializeCellfield();
-  hemocell.addCellType<hemo::RbcHighOrderModel>("validation/stretch_cell/stretch_RBC", RBC_FROM_SPHERE);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/stretch_cell/stretch_RBC", RBC_FROM_SPHERE);
   hemocell.loadParticles();
 
-  auto cellfield = (*hemocell.cellfields)["validation/stretch_cell/stretch_RBC"];
+  auto cellfield = (*hemocell.cellfields)["tests/validation/stretch_cell/stretch_RBC"];
   hemo::HemoCellStretch cellStretch(*cellfield, n_forced_lsps, hemo::param::ef_lbm);
 
   auto initial_volume_lbm = cellfield->meshmetric->getVolume();

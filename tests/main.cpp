@@ -19,8 +19,14 @@
 //
 // Finally, when leaving this function, the MPI environment will be teared down,
 // invoking `MPI_Finalize` only once.
-int main(int argc, char* argv[]) {
+int argc;
+char** argv;
+
+int main(int t_argc, char* t_argv[]) {
+    argc = t_argc;
+    argv = t_argv;
     ::testing::InitGoogleTest(&argc, argv);
+
     plb::plbInit(&(argc), &(argv));
     return RUN_ALL_TESTS();
 }

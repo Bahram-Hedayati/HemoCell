@@ -38,7 +38,7 @@ const T exp_def_lower = 0.0127918;
 TEST(Validation, oneCellShear)
 {   
 	char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"validation/oneCellShear/config.xml";
+  char *inp = (char *)"tests/validation/oneCellShear/config.xml";
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   Config * cfg = hemocell.cfg;
@@ -84,7 +84,7 @@ TEST(Validation, oneCellShear)
   // ---------------------- Initialise particle positions and perform warm-up iterations for the fluid ---------------
 
 	hemocell.initializeCellfield();
-	hemocell.addCellType<RbcHighOrderModel>("validation/oneCellShear/RBC", RBC_FROM_SPHERE);
+	hemocell.addCellType<RbcHighOrderModel>("tests/validation/oneCellShear/RBC", RBC_FROM_SPHERE);
   
   hemocell.loadParticles();
 

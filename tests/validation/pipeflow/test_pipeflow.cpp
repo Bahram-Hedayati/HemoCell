@@ -12,12 +12,12 @@
 
 const unsigned warmup_iterations = 100;
 const unsigned max_iteration = 1000;
-const auto geometry_file = "../examples/pipeflow/tube.stl";
+const auto geometry_file = "examples/pipeflow/tube.stl";
 
 /// Detailed validation test of the cell stretch problem.
 TEST(Validation, Pipeflow) {
   char *args[] = {(char *)"test", (char *)"path", NULL};
-  char *inp = (char *)"validation/pipeflow/config_pipeflow.xml";
+  char *inp = (char *)"tests/validation/pipeflow/config_pipeflow.xml";
 
   hemo::HemoCell hemocell(inp, 0, args, hemo::HemoCell::MPIHandle::External);
   hemo::Config * cfg = hemocell.cfg;
@@ -56,12 +56,12 @@ TEST(Validation, Pipeflow) {
   hemocell.lattice->initialize();
   hemocell.initializeCellfield();
 
-  hemocell.addCellType<hemo::RbcHighOrderModel>("validation/pipeflow/RBC", RBC_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("validation/pipeflow/RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
-  hemocell.setInitialMinimumDistanceFromSolid("validation/pipeflow/RBC", 0.5);
+  hemocell.addCellType<hemo::RbcHighOrderModel>("tests/validation/pipeflow/RBC", RBC_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/RBC", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.setInitialMinimumDistanceFromSolid("tests/validation/pipeflow/RBC", 0.5);
 
-  hemocell.addCellType<hemo::PltSimpleModel>("validation/pipeflow/PLT", ELLIPSOID_FROM_SPHERE);
-  hemocell.setMaterialTimeScaleSeparation("validation/pipeflow/PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
+  hemocell.addCellType<hemo::PltSimpleModel>("tests/validation/pipeflow/PLT", ELLIPSOID_FROM_SPHERE);
+  hemocell.setMaterialTimeScaleSeparation("tests/validation/pipeflow/PLT", (*cfg)["ibm"]["stepMaterialEvery"].read<int>());
 
   hemocell.setParticleVelocityUpdateTimeScaleSeparation((*cfg)["ibm"]["stepParticleEvery"].read<int>());
 
