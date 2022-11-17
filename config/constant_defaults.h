@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Use for solidifying, performance impact so only enable when using
 #ifndef SOLIDIFY_MECHANICS
-//#define SOLIDIFY_MECHANICS
+#define SOLIDIFY_MECHANICS
 #endif
 
 // Use for Interior Viscosity mechanics, performance impact so only enable when using
