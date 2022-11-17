@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
    // Setting Preinlet slice
   Box3D slice = hemocell.lattice->getBoundingBox();
-  slice.x1 = slice.x0 = slice.x0+3;
+  slice.x1 = slice.x0 = slice.x0+1;
   hemocell.preInlet->preInletFromSlice(Direction::Xneg,slice);
 
   delete temporary_lattice;
@@ -253,8 +253,10 @@ int main(int argc, char *argv[]) {
   hemocell.setFluidOutputs(outputs);
 
   //Define binding sites
-  Box3D bbnew = hemocell.lattice->getBoundingBox();
-  Box3D bindingbox(bbnew.x0-10,bbnew.x1+10,bbnew.y0,bbnew.y1,bbnew.z0,bbnew.z1);
+  Box3D bindingbox = hemocell.lattice->getBoundingBox();
+  bindingbox.x0 = bindingbox.x0+6;
+  bindingbox.x1 = bindingbox.x1-6;
+  //Box3D bindingbox(bbnew.x0-10,bbnew.x1+10,bbnew.y0,bbnew.y1,bbnew.z0,bbnew.z1);
   //hemocell.cellfields->populateBindingSites((*hemocell.lattice).getBoundingBox());
   hemocell.cellfields->populateBindingSites(&bindingbox);
 
