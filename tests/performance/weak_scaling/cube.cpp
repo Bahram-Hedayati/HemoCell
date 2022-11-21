@@ -40,7 +40,7 @@ constexpr float exec_time_1_proc = 0.002f;
 constexpr float exec_time_2_procs = 0.003f;
 constexpr float exec_time_6_procs = 0.007f;
 
-constexpr float offset = 0.15f;
+constexpr float offset = 0.01f;
 
 typedef double T;
 
