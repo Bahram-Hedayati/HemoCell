@@ -170,13 +170,12 @@ int main(int argc, char *argv[]) {
 
   hlog << "(fc_solidified_stenosis) (Fluid) Initializing Palabos Fluid Field" << endl;
   MultiBlockManagement3D management = defaultMultiBlockPolicy3D().getMultiBlockManagement(nx, ny, nz, (*cfg)["domain"]["fluidEnvelope"].read<int>());
-  MultiBlockLattice3D<double,DESCRIPTOR> * temporary_lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
+    hemocell.lattice = new MultiBlockLattice3D<double, DESCRIPTOR>(
           management,
           defaultMultiBlockPolicy3D().getBlockCommunicator(),
           defaultMultiBlockPolicy3D().getCombinedStatistics(),
           defaultMultiBlockPolicy3D().getMultiCellAccess<double, DESCRIPTOR>(),
           new GuoExternalForceBGKdynamics<double, DESCRIPTOR>(1.0/param::tau));
-  hemocell.lattice = temporary_lattice;
 
   //Set up boundaries (to help preinlet creation)
   Box3D topChannel( 0, nx-1, ny-1, ny-1, 0, nz-1);
@@ -195,9 +194,6 @@ int main(int argc, char *argv[]) {
   Box3D slice = hemocell.lattice->getBoundingBox();
   slice.x1 = slice.x0 = slice.x0+1;
   hemocell.preInlet->preInletFromSlice(Direction::Xneg,slice);
-
-  delete temporary_lattice;
-  hemocell.lattice = 0;
 
   hlog << "(Stl preinlet) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(management);
@@ -254,10 +250,8 @@ int main(int argc, char *argv[]) {
 
   //Define binding sites
   Box3D bindingbox = hemocell.lattice->getBoundingBox();
-  bindingbox.x0 = bindingbox.x0+6;
-  bindingbox.x1 = bindingbox.x1-6;
-  //Box3D bindingbox(bbnew.x0-10,bbnew.x1+10,bbnew.y0,bbnew.y1,bbnew.z0,bbnew.z1);
-  //hemocell.cellfields->populateBindingSites((*hemocell.lattice).getBoundingBox());
+  bindingbox.x0 = bindingbox.x0+26;
+  bindingbox.x1 = bindingbox.x1-26;
   hemocell.cellfields->populateBindingSites(&bindingbox);
 
   //loading the cellfield
