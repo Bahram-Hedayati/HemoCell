@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hemocell.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
+#include "preInlet.h"
 
 namespace hemo {
   bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
@@ -33,29 +34,44 @@ namespace hemo {
       pcout << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
       exit(1);
     }
-    
+
+    int nProcs = global::mpi().getSize() - cellFields.hemocell.preInlet->nProcs;
+  
+    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " domain_lattice_management -> "
+    //  << cellFields.hemocell.domain_lattice_management->getBoundingBox() << std::endl;  
+
+    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " cellFields.hemocell.lattice -> "
+    //  << cellFields.hemocell.lattice->getBoundingBox() << std::endl;  
+
+    SparseBlockStructure3D sb = createRegularDistribution3D(cellFields.hemocell.domain_lattice_management->getBoundingBox(), nProcs);
+    ExplicitThreadAttribution * eta = new ExplicitThreadAttribution(cellFields.hemocell.BlockToMpi);
+    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " cellFields.hemocell.domain_lattice -> " << cellFields.hemocell.domain_lattice << std::endl;
     //Create bindingfield with same properties as fluid field underlying the particleField.
     multiBindingField = new plb::MultiScalarField3D<bool>(
             MultiBlockManagement3D (
-                *cellFields.hemocell.lattice->getSparseBlockStructure().clone(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                cellFields.hemocell.lattice->getMultiBlockManagement().getRefinementLevel()),
+                *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
+                cellFields.immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
                 defaultMultiBlockPolicy3D().getBlockCommunicator(),                
                 defaultMultiBlockPolicy3D().getCombinedStatistics(),
                 defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
                 0);
-    multiBindingField->periodicity().toggle(0,cellFields.hemocell.lattice->periodicity().get(0));
-    multiBindingField->periodicity().toggle(1,cellFields.hemocell.lattice->periodicity().get(1));
-    multiBindingField->periodicity().toggle(2,cellFields.hemocell.lattice->periodicity().get(2));
+    multiBindingField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
+    multiBindingField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
+    multiBindingField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
+    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " before multiBindingField->initialize()" << std::endl;
 
     multiBindingField->initialize();
-    
+    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " cellFields.domain_immersedParticles -> " << cellFields.domain_immersedParticles << std::endl;
     //Make sure each particleField has access to its local scalarField
-    for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
-      pf.bindingField = &multiBindingField->getComponent(bId);
+    if (!cellFields.hemocell.partOfpreInlet) {
+      for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
+        HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
+        pf.bindingField = &multiBindingField->getComponent(bId);
+      }
     }
+    
   }
   
   bindingFieldHelper::~bindingFieldHelper() {
@@ -119,15 +135,17 @@ namespace hemo {
   } 
   
   void bindingFieldHelper::refillBindingSites() {
-    for (const plint & bId : cellFields.immersedParticles->getLocalInfo().getBlocks()) {
-      HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
-      ScalarField3D<bool> & bf = *pf.bindingField;
-      Box3D domain = bf.getBoundingBox();
-      for (int x = domain.x0; x <= domain.x1 ; x++) {
-        for (int y = domain.y0; y <= domain.y1; y++) {
-          for (int z = domain.z0; z <= domain.z1; z++) {
-            if(bf.get(x,y,z)) {
-              pf.bindingSites.insert({x,y,z});
+    if (!cellFields.hemocell.partOfpreInlet) {
+      for (const plint & bId : cellFields.immersedParticles->getLocalInfo().getBlocks()) {
+        HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
+        ScalarField3D<bool> & bf = *pf.bindingField;
+        Box3D domain = bf.getBoundingBox();
+        for (int x = domain.x0; x <= domain.x1 ; x++) {
+          for (int y = domain.y0; y <= domain.y1; y++) {
+            for (int z = domain.z0; z <= domain.z1; z++) {
+              if(bf.get(x,y,z)) {
+                pf.bindingSites.insert({x,y,z});
+              }
             }
           }
         }
