@@ -198,20 +198,6 @@ int main(int argc, char *argv[]) {
   hlog << "(Stl preinlet) (Fluid) Initializing Palabos Fluid Field" << endl;
   hemocell.initializeLattice(management);
 
-  // Boundaries for the domain
-  if (!hemocell.partOfpreInlet) {
-      Box3D bb = hemocell.lattice->getBoundingBox();
-      Box3D outlet(bb.x1-2,bb.x1,bb.y0,bb.y1,bb.z0,bb.z1);
-      OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
-              < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
-      boundary->addPressureBoundary0P(outlet,*hemocell.lattice,boundary::density);
-      defineDynamics(*hemocell.lattice, bottomChannel, new BounceBack<T, DESCRIPTOR> );
-      defineDynamics(*hemocell.lattice, topChannel, new BounceBack<T, DESCRIPTOR> );
-      defineDynamics(*hemocell.lattice, (*hemocell.lattice).getBoundingBox(),
-                     new StenosisShapeDomain3D<T>(xtopL, xtopR, xcircL, xcircR, ycirc, ytop, radiusCyl, a, bL, bR, y),
-                             new BounceBack<T, DESCRIPTOR>(1.) );
-  }
-
   hemocell.preInlet->initializePreInlet();
 
   hemocell.lattice->periodicity().toggle(2,true);
@@ -249,10 +235,16 @@ int main(int argc, char *argv[]) {
   hemocell.setFluidOutputs(outputs);
 
   //Define binding sites
-  Box3D bindingbox = hemocell.lattice->getBoundingBox();
-  bindingbox.x0 = bindingbox.x0+26;
-  bindingbox.x1 = bindingbox.x1-26;
-  hemocell.cellfields->populateBindingSites(&bindingbox);
+  if(!hemocell.partOfpreInlet){
+    Box3D bb = hemocell.lattice->getBoundingBox();
+    Box3D outlet(bb.x1-2,bb.x1,bb.y0,bb.y1,bb.z0,bb.z1);
+    OnLatticeBoundaryCondition3D<T,DESCRIPTOR>* boundary = new BoundaryConditionInstantiator3D
+            < T, DESCRIPTOR, WrappedZouHeBoundaryManager3D<T,DESCRIPTOR> > ();
+    boundary->addPressureBoundary0P(outlet,*hemocell.lattice,boundary::density);
+    Box3D bindingbox = hemocell.lattice->getBoundingBox();
+    hemocell.cellfields->populateBindingSites(&bindingbox);
+  }
+
 
   //loading the cellfield
   if (not cfg->checkpointed) {
@@ -293,14 +285,15 @@ int main(int argc, char *argv[]) {
     hemocell.preInlet->applyPreInlet();
 
     // Load-balancing! Only enable if PARMETIS build is available
-    /*
+    #ifdef HEMO_PARMETIS
      if (hemocell.iter % tbalance == 0) {
        if(hemocell.calculateFractionalLoadImbalance() > (*cfg)["parameters"]["maxFlin"].read<double>()) {
          hemocell.doLoadBalance();
          hemocell.doRestructure();
        }
      }
-   */
+   #endif
+   
     if (hemocell.iter % tmeas == 0) {
       pcout << "(main) Stats. @ " <<  hemocell.iter << " (" << hemocell.iter * param::dt << " s):" << endl;
       pcout << "\t # of cells: " << CellInformationFunctionals::getTotalNumberOfCells(&hemocell);
