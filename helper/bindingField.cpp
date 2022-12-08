@@ -60,31 +60,41 @@ namespace hemo {
       }
     }
     else{
-      // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " domain_lattice_management -> "
-    //  << cellFields.hemocell.domain_lattice_management->getBoundingBox() << std::endl;  
-     plint preInlet_numProcs;
-    // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " cellFields.hemocell.lattice -> "
-    //  << cellFields.hemocell.lattice->getBoundingBox() << std::endl;  
-      try{
-        Config * cfg = cellFields.hemocell.cfg;
+      Config * cfg = cellFields.hemocell.cfg;
+      plint preInlet_numProcs;
+      MultiBlockManagement3D* bindingFields_lattice_management;
+      
+      /*
+        Since the bindingFields instance is initialized using the domain_lattice Bounding Box
+        the same thread attribution needs to be used
+      */
+      ExplicitThreadAttribution * eta_bindingFields = new ExplicitThreadAttribution(cellFields.hemocell.BlockToMpi);
+      
+      try{ // Look for the number of atomic blocks in the config file
         plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
         plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
         plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
         preInlet_numProcs = preInlet_pABx*preInlet_pABy*preInlet_pABz;
-        std::cout << "Number of processes on preInlet -> " << preInlet_pABx*preInlet_pABy*preInlet_pABz << std::endl;
       }catch(const std::invalid_argument& e){
         preInlet_numProcs = cellFields.hemocell.preInlet->nProcs;
       }
-      
-      int Binding_Sites_nProcs = global::mpi().getSize() - preInlet_numProcs;
+     
+      try {
+        SparseBlockStructure3D sb_bindingFields = createRegularDistribution3D(cellFields.hemocell.domain_lattice->getBoundingBox(),
+                                                            (*cfg)["domain"]["mABx"].read<int>(),
+                                                            (*cfg)["domain"]["mABy"].read<int>(),
+                                                            (*cfg)["domain"]["mABz"].read<int>());
+        bindingFields_lattice_management = new MultiBlockManagement3D(sb_bindingFields,eta_bindingFields,cellFields.domain_immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel());
+      } // If config file is nonexistent, fall back to the default distribution
+      catch (const std::invalid_argument& e) { 
+        int Binding_Sites_nProcs = global::mpi().getSize() - preInlet_numProcs;
+        SparseBlockStructure3D sb_bindingFields = createRegularDistribution3D(cellFields.hemocell.domain_lattice->getBoundingBox(),Binding_Sites_nProcs);
+        bindingFields_lattice_management = new MultiBlockManagement3D(sb_bindingFields,eta_bindingFields,cellFields.domain_immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel());
+      }
     
       //Create bindingfield with same properties as fluid field underlying the particleField.
       multiBindingField = new plb::MultiScalarField3D<bool>(
-              MultiBlockManagement3D (
-                  *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
-                  cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                  cellFields.domain_immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),
-                  cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
+              *bindingFields_lattice_management,
                   defaultMultiBlockPolicy3D().getBlockCommunicator(),                
                   defaultMultiBlockPolicy3D().getCombinedStatistics(),
                   defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
@@ -92,17 +102,13 @@ namespace hemo {
       multiBindingField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
       multiBindingField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
       multiBindingField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
-      // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " before multiBindingField->initialize()" << std::endl;
 
       multiBindingField->initialize();
-      // std::cout << "Process -> " << MPI::COMM_WORLD.Get_rank() << " cellFields.domain_immersedParticles -> " << cellFields.domain_immersedParticles << std::endl;
       //Make sure each particleField has access to its local scalarField
-      if (!cellFields.hemocell.partOfpreInlet) {
         for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
           HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
           pf.bindingField = &multiBindingField->getComponent(bId);
         }
-      }
     }
     
     
@@ -172,17 +178,15 @@ namespace hemo {
   } 
   
   void bindingFieldHelper::refillBindingSites() {
-    if (!cellFields.hemocell.partOfpreInlet) {
-      for (const plint & bId : cellFields.domain_immersedParticles->getLocalInfo().getBlocks()) {
-        HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
-        ScalarField3D<bool> & bf = *pf.bindingField;
-        Box3D domain = bf.getBoundingBox();
-        for (int x = domain.x0; x <= domain.x1 ; x++) {
-          for (int y = domain.y0; y <= domain.y1; y++) {
-            for (int z = domain.z0; z <= domain.z1; z++) {
-              if(bf.get(x,y,z)) {
-                pf.bindingSites.insert({x,y,z});
-              }
+    for (const plint & bId : cellFields.domain_immersedParticles->getLocalInfo().getBlocks()) {
+      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
+      ScalarField3D<bool> & bf = *pf.bindingField;
+      Box3D domain = bf.getBoundingBox();
+      for (int x = domain.x0; x <= domain.x1 ; x++) {
+        for (int y = domain.y0; y <= domain.y1; y++) {
+          for (int z = domain.z0; z <= domain.z1; z++) {
+            if(bf.get(x,y,z)) {
+              pf.bindingSites.insert({x,y,z});
             }
           }
         }
