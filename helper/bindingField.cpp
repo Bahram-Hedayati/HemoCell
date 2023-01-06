@@ -34,84 +34,28 @@ namespace hemo {
       pcout << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
       exit(1);
     }
-
-    if(!cellFields.hemocell.preInlet){
-      //Create bindingfield with same properties as fluid field underlying the particleField.
-      multiBindingField = new plb::MultiScalarField3D<bool>(
+    
+    //Create bindingfield with same properties as fluid field underlying the particleField.
+    multiBindingField = new plb::MultiScalarField3D<bool>(
               MultiBlockManagement3D (
-                  *cellFields.hemocell.lattice->getSparseBlockStructure().clone(),
-                  cellFields.hemocell.lattice->getMultiBlockManagement().getThreadAttribution().clone(),
-                  cellFields.hemocell.lattice->getMultiBlockManagement().getEnvelopeWidth(),
-                  cellFields.hemocell.lattice->getMultiBlockManagement().getRefinementLevel()),
-                  defaultMultiBlockPolicy3D().getBlockCommunicator(),                
-                  defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                  defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
-                  0);
-      multiBindingField->periodicity().toggle(0,cellFields.hemocell.lattice->periodicity().get(0));
-      multiBindingField->periodicity().toggle(1,cellFields.hemocell.lattice->periodicity().get(1));
-      multiBindingField->periodicity().toggle(2,cellFields.hemocell.lattice->periodicity().get(2));
+                *cellFields.hemocell.domain_lattice->getSparseBlockStructure().clone(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getThreadAttribution().clone(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getEnvelopeWidth(),
+                cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel()),
+                defaultMultiBlockPolicy3D().getBlockCommunicator(),                
+                defaultMultiBlockPolicy3D().getCombinedStatistics(),
+                defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
+                0);
+    multiBindingField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
+    multiBindingField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
+    multiBindingField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
 
-      multiBindingField->initialize();
-      
-      //Make sure each particleField has access to its local scalarField
-      for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
-        HemoCellParticleField & pf = cellFields.immersedParticles->getComponent(bId);
-        pf.bindingField = &multiBindingField->getComponent(bId);
-      }
+    multiBindingField->initialize();
+    //Make sure each particleField has access to its local scalarField
+    for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
+      HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
+      pf.bindingField = &multiBindingField->getComponent(bId);
     }
-    else{
-      Config * cfg = cellFields.hemocell.cfg;
-      plint preInlet_numProcs;
-      MultiBlockManagement3D* bindingFields_lattice_management;
-      
-      /*
-        Since the bindingFields instance is initialized using the domain_lattice Bounding Box
-        the same thread attribution needs to be used
-      */
-      ExplicitThreadAttribution * eta_bindingFields = new ExplicitThreadAttribution(cellFields.hemocell.BlockToMpi);
-      
-      try{ // Look for the number of atomic blocks in the config file
-        plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
-        plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
-        plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
-        preInlet_numProcs = preInlet_pABx*preInlet_pABy*preInlet_pABz;
-      }catch(const std::invalid_argument& e){
-        preInlet_numProcs = cellFields.hemocell.preInlet->nProcs;
-      }
-     
-      try {
-        SparseBlockStructure3D sb_bindingFields = createRegularDistribution3D(cellFields.hemocell.domain_lattice->getBoundingBox(),
-                                                            (*cfg)["domain"]["mABx"].read<int>(),
-                                                            (*cfg)["domain"]["mABy"].read<int>(),
-                                                            (*cfg)["domain"]["mABz"].read<int>());
-        bindingFields_lattice_management = new MultiBlockManagement3D(sb_bindingFields,eta_bindingFields,cellFields.domain_immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel());
-      } // If config file is nonexistent, fall back to the default distribution
-      catch (const std::invalid_argument& e) { 
-        int Binding_Sites_nProcs = global::mpi().getSize() - preInlet_numProcs;
-        SparseBlockStructure3D sb_bindingFields = createRegularDistribution3D(cellFields.hemocell.domain_lattice->getBoundingBox(),Binding_Sites_nProcs);
-        bindingFields_lattice_management = new MultiBlockManagement3D(sb_bindingFields,eta_bindingFields,cellFields.domain_immersedParticles->getMultiBlockManagement().getEnvelopeWidth(),cellFields.hemocell.domain_lattice->getMultiBlockManagement().getRefinementLevel());
-      }
-    
-      //Create bindingfield with same properties as fluid field underlying the particleField.
-      multiBindingField = new plb::MultiScalarField3D<bool>(
-              *bindingFields_lattice_management,
-                  defaultMultiBlockPolicy3D().getBlockCommunicator(),                
-                  defaultMultiBlockPolicy3D().getCombinedStatistics(),
-                  defaultMultiBlockPolicy3D().getMultiScalarAccess<bool>(),
-                  0);
-      multiBindingField->periodicity().toggle(0,cellFields.hemocell.domain_lattice->periodicity().get(0));
-      multiBindingField->periodicity().toggle(1,cellFields.hemocell.domain_lattice->periodicity().get(1));
-      multiBindingField->periodicity().toggle(2,cellFields.hemocell.domain_lattice->periodicity().get(2));
-
-      multiBindingField->initialize();
-      //Make sure each particleField has access to its local scalarField
-        for (const plint & bId : multiBindingField->getLocalInfo().getBlocks()) {
-          HemoCellParticleField & pf = cellFields.domain_immersedParticles->getComponent(bId);
-          pf.bindingField = &multiBindingField->getComponent(bId);
-        }
-    }
-    
-    
     
   }
   
@@ -193,4 +137,5 @@ namespace hemo {
       }
     }
   }
+
 }
