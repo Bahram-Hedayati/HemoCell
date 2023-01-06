@@ -327,7 +327,6 @@ void HemoCell::iterate() {
   if(iter %cellfields->particleVelocityUpdateTimescale == 0) {
     // #### 3 #### IBM interpolation
     cellfields->interpolateFluidVelocity();
-
     // ### 4 ### sync the particles
     cellfields->syncEnvelopes();
   }
@@ -482,12 +481,7 @@ void HemoCell::initializeLattice(MultiBlockManagement3D const & management) {
   totalNodes += preInlet->getNumberOfNodes();
   totalNodes += cellsInBoundingBox(management.getBoundingBox());
   
-  
-
-  // JON addition: Try to read in number of processors allocated to preinlet from config file.
-  // TODO: Do we still need this? 
-  // Just continue with value computed above if reading it from XML throws an exception because it does not exist
-  try  {         
+  try  { // Look for block management info in the config file
         plint preInlet_pABx = (*cfg)["preInlet"]["parameters"]["pABx"].read<plint>();
         plint preInlet_pABy = (*cfg)["preInlet"]["parameters"]["pABy"].read<plint>();
         plint preInlet_pABz = (*cfg)["preInlet"]["parameters"]["pABz"].read<plint>();
