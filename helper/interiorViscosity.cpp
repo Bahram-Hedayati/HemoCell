@@ -89,7 +89,7 @@ namespace hemo {
     
   void InteriorViscosityHelper::checkpoint() {
     if (!global.enableInteriorViscosity) { 
-      pcout << "(interiorViscosityField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen" << endl;
+      hlog << "(interiorViscosityField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen" << endl;
       return;
     }
     std::string & outDir = hemo::global.checkpointDirectory;
@@ -111,21 +111,21 @@ namespace hemo {
   
   void InteriorViscosityHelper::restore(HemoCellFields & cellFields) {
     if (!global.enableInteriorViscosity) { 
-      pcout << "(internalViscosityField) Restore called while global.enableInteriorViscosity is not enabled, not restoring" << endl;
+      hlog << "(internalViscosityField) Restore called while global.enableInteriorViscosity is not enabled, not restoring" << endl;
       return;
     }
     std::string & outDir = hemo::global.checkpointDirectory;
     std::string file_dat = outDir + "internalViscosity.dat";
     std::string file_plb = outDir + "internalViscosity.plb";
     if(!(file_exists(file_dat) && file_exists(file_plb))) {
-      pcout << "(internalViscosityField) Error restoring internalViscosity fields from checkpoint, they do not seem to exist" << endl;
+      hlog << "(internalViscosityField) Error restoring internalViscosity fields from checkpoint, they do not seem to exist" << endl;
       exit(1);
     }
     if(cellFields.hemocell.preInlet){
       std::string file_dat = outDir + "PRE_internalViscosity.dat";
       std::string file_plb = outDir + "PRE_internalViscosity.plb";
       if(!(file_exists(file_dat) && file_exists(file_plb))) {
-        pcout << "(PRE_internalViscosityField) Error restoring PRE_internalViscosity fields from checkpoint, they do not seem to exist" << endl;
+        hlog << "(PRE_internalViscosityField) Error restoring PRE_internalViscosity fields from checkpoint, they do not seem to exist" << endl;
         exit(1);
       }
     }
