@@ -5,6 +5,7 @@
     
           HighpErformance MicrOscopic CELlular Library
 
+[![DOI](https://zenodo.org/badge/114760920.svg)](https://zenodo.org/badge/latestdoi/114760920)
 
 About HemoCell
 ==============
