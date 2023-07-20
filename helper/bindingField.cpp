@@ -31,7 +31,7 @@ namespace hemo {
   bindingFieldHelper::bindingFieldHelper(HemoCellFields * cellFields_) : cellFields(*cellFields_) {
     //Check if function is not called too early
     if (!cellFields_) {
-      pcout << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
+      hlog << "(BindingField) ERROR: Bindingfield is requested while cellfields is not initialized. Perhaps populateBindingSites is called before hemocell.initializeCellFields?" << endl;
       exit(1);
     }
     
@@ -65,7 +65,7 @@ namespace hemo {
     
   void bindingFieldHelper::checkpoint() {
     if (!global.enableSolidifyMechanics) { 
-      pcout << "(BindingField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen" << endl;
+      hlog << "(BindingField) Checkpoint called while global.enableSolidifyMechanics is not enabled, still checkpointing but this should not happen" << endl;
       return;
     }
   
@@ -83,7 +83,7 @@ namespace hemo {
   
   void bindingFieldHelper::restore(HemoCellFields & cellFields) {
     if (!global.enableSolidifyMechanics) { 
-      pcout << "(BindingField) Restore called while global.enableSolidifyMechanics is not enabled, not restoring" << endl;
+      hlog << "(BindingField) Restore called while global.enableSolidifyMechanics is not enabled, not restoring" << endl;
       return;
     }
 
@@ -91,7 +91,7 @@ namespace hemo {
     std::string file_dat = outDir + "bindingSites.dat";
     std::string file_plb = outDir + "bindingSites.plb";
     if(!(file_exists(file_dat) && file_exists(file_plb))) {
-      pcout << "(BindingField) Error restoring bindingSites fields from checkpoint, they do not seem to exist" << endl;
+      hlog << "(BindingField) Error restoring bindingSites fields from checkpoint, they do not seem to exist" << endl;
       exit(1);
     }
     
