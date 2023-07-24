@@ -123,15 +123,24 @@ questions can be directed towards: info@hemocell.eu.
   * - Alfons Hoekstra
     - Co-PI
     -
-  * - Ben Czaja
-    - Developer
-    - B.E.Czaja at uva.nl
   * - Christian Spieker
     - Developer
     - C.J.Spieker at uva.nl
+  * - Jelle van Dijk
+    - Developer
+    - j.vandijk3 at uva.nl
+  * - Konstantinos Asteriou
+    - Developer
+    - k.asteriou at uva.nl
   * - Mark Wijzenbroek
     - Package maintainer
     -
+  * - Eleanor Broadway
+    - Former GPU developer
+    - 
+  * - Ben Czaja
+    - Former developer
+    - 
   * - Max van der Kolk
     - Former developer
     -
