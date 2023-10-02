@@ -54,6 +54,7 @@ public:
   void reset();
   void printStatistics();
   void outputStatistics();
+  void outputStatistics(int);
   
   std::chrono::high_resolution_clock::duration elapsed();
   std::string elapsed_string();
@@ -66,6 +67,8 @@ private:
   void stop_nowarn();
   template<typename T>
   void printStatistics_inner(int level, T & out);
+  template<typename T>
+  void printStatistics_JSON(T & out);
   std::chrono::high_resolution_clock::duration total_time = std::chrono::high_resolution_clock::duration::zero();
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
   bool started = false;
@@ -76,4 +79,3 @@ private:
 };
 }
 #endif /* PROFILER_H */
-
