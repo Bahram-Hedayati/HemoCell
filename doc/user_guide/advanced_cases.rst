@@ -12,3 +12,4 @@ and changing output behaviour.
    advanced_cases/pure_flow_simulations.rst
    advanced_cases/repulsion.rst
    advanced_cases/saving_csv_output_only.rst
+   advanced_cases/profiler.rst
