@@ -144,6 +144,7 @@ int main(int argc, char* argv[]){
   unsigned int tmax = (*cfg)["sim"]["tmax"].read<unsigned int>();
   unsigned int tmeas = (*cfg)["sim"]["tmeas"].read<unsigned int>();
   unsigned int tcheckpoint = (*cfg)["sim"]["tcheckpoint"].read<unsigned int>();
+  unsigned int tcsv = (*cfg)["sim"]["tcsv"].read<unsigned int>();
 
 
   while (hemocell.iter < tmax ) {
@@ -163,6 +164,12 @@ int main(int argc, char* argv[]){
       hemocell.writeOutput();
 
     }
+
+    if (hemocell.iter % tcsv == 0) {
+      hlog << "Saving simple mean cell values to CSV at timestep " << hemocell.iter << endl;
+      writeCellInfo_CSV(hemocell);
+    }
+
     if (hemocell.iter % tcheckpoint == 0) {
       hemocell.saveCheckPoint();
     }

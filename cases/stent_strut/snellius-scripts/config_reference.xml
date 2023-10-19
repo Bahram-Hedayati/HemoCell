@@ -25,6 +25,9 @@
 	<blockSize> -1 </blockSize>
     <particleEnvelope>25</particleEnvelope>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <mABx> 40 </mABx> <!-- amount of atomic blocks in x direction (main domain) -->
+    <mABy> 8 </mABy> <!-- amount of atomic blocks in y direction (main domain) -->
+    <mABz> 20 </mABz> <!-- amount of atomic blocks in z direction (main domain) -->
 </domain>
 
 <sim>

@@ -12,9 +12,9 @@
 </ibm>
 
 <domain>
-	<geometry> stent-strut_reference.stl </geometry> <!-- stent-strut_casper-scaled_length533-100-width50-height75 -->
+	<geometry> stent-strut_casper.stl </geometry> <!-- stent-strut_casper-scaled_length533-100-width50-height75 -->
 	<fluidEnvelope> 2 </fluidEnvelope>
-	<velocity> 0.0727 </velocity>   <!--Surface velocity in m/s-->
+	<velocity> 0.0439 </velocity>   <!--Surface velocity in m/s-->
 	<shearrate> 450.0 </shearrate>   <!--Shear rate for the fluid domain. [s^-1]-->
     <rhoP> 1025 </rhoP>   <!--Density of the surrounding fluid, Physical units [kg/m^3]-->
     <nuP> 1.1e-6 </nuP>   <!-- Kinematic viscosity of the surrounding fluid, physical units [m^2/s]-->
@@ -25,11 +25,14 @@
 	<blockSize> -1 </blockSize>
     <particleEnvelope>25</particleEnvelope>
     <kBT>4.100531391e-21</kBT> <!-- in SI, m2 kg s-2 (or J) for T=300 -->
+    <mABx> 40 </mABx> <!-- amount of atomic blocks in x direction (main domain) -->
+    <mABy> 8 </mABy> <!-- amount of atomic blocks in y direction (main domain) -->
+    <mABz> 20 </mABz> <!-- amount of atomic blocks in z direction (main domain) -->
 </domain>
 
 <sim>
     <tmax> 10000000 </tmax> <!-- total number of iterations -->
-    <tmeas> 100000 </tmeas> <!-- interval after which data is written --> 
+    <tmeas> 100000 </tmeas> <!-- interval after which data is written -->
     <tcheckpoint> 100000 </tcheckpoint>
     <tcsv> 1000 </tcsv>
 </sim>
