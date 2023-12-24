@@ -13,7 +13,7 @@ Red Blood Cells (RBCs) and is capable of reproducing emergent transport
 characteristics of such complex cellular systems :cite:`Zavodszky:2017`.
 HemoCell is capable of handling large simulation domain sizes and high shear-rate
 flows providing a virtual environment to evaluate a wide palette of microfluidic
-scenarios :cite:`zavodszky2019red,czaja2018cell,van2020haemodynamic`.
+scenarios :cite:`zavodszky2019red,czaja2018cell,van2021haemodynamic`.
 
 For the simulation of dense flows, HemoCell employs the Immersed Boundary
 Method (IBM) to couple the immersed vesicles, e.g. RBCs, platelets (PLTs),
@@ -111,8 +111,8 @@ User Guide
 Acknowledgments
 ================
 
-HemoCell is developed and maintained by the following persons, where any
-questions can be directed towards: info@hemocell.eu.
+HemoCell is developed and maintained by several researchers. The list of developpers and mainteainers at the last document update:
+
 
 .. list-table::
   :header-rows: 0
@@ -130,10 +130,10 @@ questions can be directed towards: info@hemocell.eu.
     - Developer
     - j.vandijk3 at uva.nl
   * - Konstantinos Asteriou
-    - Developer
-    - k.asteriou at uva.nl
+    - Former developer
+    - 
   * - Mark Wijzenbroek
-    - Package maintainer
+    - Former package maintainer
     -
   * - Eleanor Broadway
     - Former GPU developer
@@ -156,6 +156,9 @@ questions can be directed towards: info@hemocell.eu.
   * - Saad Allowayyed
     - Former developer
     -
+  * - Maurits Bos
+    - Former contributor
+    -
   * - Daan van Ingen
     - Former contributor
     -
@@ -174,6 +177,9 @@ questions can be directed towards: info@hemocell.eu.
   * - Roland Joo-Kovacs
     - Former contributor
     -
+
+
+If you have any question please open a `Github discussion <https://github.com/UvaCsl/HemoCell/discussions>`_.
 
 Citing HemoCell
 ---------------
@@ -215,7 +221,7 @@ Before you contribute
 * Make sure that the bug you want to report is not already reported in our Github issues
   and that no one is working on it.
 * If you have any questions about the software or if you are facing any issues using it
-  feel free to open a Github issue or email at info@hemocell.eu.
+  feel free to open a `Github discussion <https://github.com/UvaCsl/HemoCell/discussions>`_.
 
 Code contribution
 -----------------
