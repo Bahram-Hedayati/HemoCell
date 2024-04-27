@@ -37,7 +37,7 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
-    'sphinxcontrib.inlinesyntaxhighlight',
+    #'sphinxcontrib.inlinesyntaxhighlight',
     'sphinxcontrib.bibtex',
     'breathe',
 ]

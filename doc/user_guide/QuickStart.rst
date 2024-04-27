@@ -7,48 +7,49 @@ HemoCell Getting Started
 Setting up HemoCell from source
 -------------------------------
 
-Requirements for compiling and/or running HemoCell from source:
+The following packages are requirements for compiling and/or running HemoCell from source.
 
 ==========================         ==========================
-Dependency                         Version
+Required package                   Tested versions
 ==========================         ==========================
-`OpenMpi`_ or `IntelMPI`_          1.10.2 or 17.0.5
-`GCC`_                             5.2.0
-`CMake`_                           3.7.2
-`HDF5`_                            1.8.16
-`GNU Patch`_                       2.7.5
-`h5py`_                            2.6.0-1
-`Palabos`_                         2.0
+`OpenMpi`_                         4.1.6 
+`GCC`_                             12.3.0
+`CMake`_                           3.28.3
+`HDF5`_                            1.10.10
+`GNU Patch`_                       2.7.6
+`h5py`_                            2.6.0
+`Palabos`_                         2.2.1
 `Parmetis`_ (optional)             4.0.3
 ==========================         ==========================
 
 .. note::
+  The currently tested versions are listed. Older/newer versions might work as well.
+  Avoid OpenMPI 2.0.X as in our experience it introduces memory leaks.
 
-  These are minimal requirements, avoid OpenMPI 2.0.X as in our experience it
-  introduces memory leaks.
-
-On Ubuntu 16.04 most of these dependencies can be installed by running::
+On Ubuntu 24.04 these dependencies can be installed by running::
 
   sudo apt-get install -y \
         make \
         cmake \
-        g++-5 \
-        g++ \
+        g++-12 \
         libopenmpi-dev \
         libhdf5-dev \
         patch \
-        python-h5py
+        python3-h5py
 
-This leaves the `Palabos`_ and `Parmetis`_ dependencies. For Palabos we
-currently use the ``v2.2.1`` version with an additional patch. To automatically
-download this specific Palabos version and apply our patch, the setup script
-``hemocell/setup.sh`` can be evaluated::
+The main external dependency `Palabos`_ has to be added and patched.
+We currently support the ``v2.2.1`` version with an additional small patch. This can be done in two ways. 
 
-  # from ./hemocell/
+1. To automatically download this specific Palabos version and apply our patch, run the setup script
+``hemocell/setup.sh``::
+
+  # from the hemocell/ root directory execute
   ./setup.sh
 
-You can also op to manually download Palabos through their `releases
-<https://gitlab.com/unigespc/palabos/-/releases>`_. After downloading Palabos
+At this point HemoCell should be ready for compilation and development, you can move on to the next section below.
+
+2. Alternatively, you can opt to manually download Palabos through their `releases
+<https://gitlab.com/unigespc/palabos/-/releases>`_. This is useful if you want to use a different version. After downloading, Palabos
 should be extracted to ``./hemocell/palabos``::
 
   tar -xzf palabos-v2.2.1.tar.gz
@@ -60,9 +61,11 @@ so::
 
   cd hemocell/patch && ./patchPLB.sh
 
-The patching should succeed even though there might be an offset in some files.
+The patching should succeed even though there might be an offset in some files. 
+At this point HemoCell should be ready for compilation and development.
 
-`Parmetis`_ can be downloaded from their `downloads
+(Optional) `Parmetis`_ is used for upcoming load-balancing routines (in development atm.). 
+It can be installed via adding ``libparmetis-dev`` on Ubuntu, or it can be downloaded from their `downloads
 <http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_. Due to the
 license of Parmetis we cannot distribute it with hemocell. The Parmetis
 download should be copied to the  ``./hemocell/external/`` directory. If you
@@ -86,8 +89,11 @@ the HemoCell library::
   cmake ..
   cmake --build .
 
-By default only the standard ``hemocell`` library is compiled. To compile
-specific examples, you should specify their corresponding compile targets.
+By default only the standard ``hemocell`` library is compiled. 
+This operation can take a while, we suggest a coffee. Note: there might be a set of warning depending
+on the versions of the dependencies you are using.
+
+To compile specific examples (that link to the library), you should specify their corresponding compile targets.
 These targets are defined for each example and match the example's directory
 name. Thus, to compile the example given in ``hemocell/examples/pipeflow/pipeflow.cpp``
 you would compile the target ``pipeflow``. After compilation, the executable
@@ -137,11 +143,14 @@ This tool has a CMake file and can be build with::
   make
 
 The result should be a ``packCells`` binary. This program offers a rich suite of
-options to generate initial conditions for cells. Just type ``./packCells --help``
-to see how it works.
+options to generate initial conditions for cells. Type ``./packCells --help``
+for an overview of the possible parameters.
 
 The resulting ``*.pos`` files can be copied to the case where you want to use
 them.
+
+.. note:: 
+  The domain size is defined in microns, not in lattice units. This is to remain independent of the numerical resolution.
 
 
 Running a HemoCell case
@@ -167,22 +176,26 @@ per timestep in ``tmp/hdf5`` and the csv output in ``tmp/csv``. See
 
 .. _read_output:
 
-Parsing the output of a HemoCell case
---------------------------------------
+Post-processing the output of a HemoCell case
+---------------------------------------------
 
-A HemoCell case produces multiple types of output. The simplest is the ``csv``
-output which consists of all the information about cells in csv files. To merge
-the csv files into a single one per time-step you can use the script :any:`ccsv`
-in the ``tmp`` directory. This will generate them for you.
+A HemoCell case produces multiple types of output by default. The simplest is the ``csv``
+output which consists of all the information about cells in csv files. 
+On older HemoCell versions you might want to merge the csv files into a single one per time-step with the script :any:`ccsv`
+in the ``tmp`` directory. Note: HemoCell now does this automatically.
 
-The more detailed output on both the fluid field and particle field is stored in
+The more detailed output on both the fluid field and particle field is stored in compressed
 ``hdf5`` format. We recommend using the `XDMF`_ format to make these
-readable for `Paraview`_ . To generate ``*.xmf`` files run the :any:`bpp`
-script.
+readable for visualization tools such as `Paraview`_ . To generate ``*.xmf`` files run the :any:`bpp`
+script, e.g. from the folder of a case::
+  
+  ../../scripts/batchPostProcess.sh
 
-When you have created the ``*.xmf`` files you can load them into Paraview,
-please select the *Legacy* XDMF file format when loading them in. The HemoCell
-``.xmf`` files are not yet XDMF3 compatible.
+When you have created the ``*.xmf`` files, they can be opened in Paraview.
+Please select the *Legacy* XDMF file format when loading them in. 
+
+.. note:: 
+  The HemoCell ``.xmf`` files are not yet XDMF3 compatible. Opening it with an XDMF3 reader might crash the visualization app.
 
 Resuming from a checkpoint
 --------------------------
