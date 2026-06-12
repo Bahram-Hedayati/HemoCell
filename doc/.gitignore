@@ -1,2 +1,7 @@
 doxygen/*/
 _build/
+user_guide/_build/
+
+# Local Python virtual environments used to build the docs
+.venv/
+.venv*/

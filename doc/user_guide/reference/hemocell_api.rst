@@ -1,0 +1,177 @@
+The HemoCell API
+================
+
+This page is a task-oriented guide to the ``hemo::HemoCell`` class — the object
+you drive from a case's ``main()``. It groups the most commonly used methods by
+what you do with them. For full signatures, overloads, and the rest of the C++
+API, see the auto-generated :ref:`Doxygen reference
+<hemocell_doxygen:HemoCell Doxygen Documentation>`.
+
+A minimal case follows the same skeleton in every example (see
+:ref:`Case:Creating your own HemoCell Case` for the full walk-through):
+
+.. code-block:: c++
+
+   HemoCell hemocell(argv[1], argc, argv);   // 1. construct
+   hemocell.initializeLattice(management);   // 2. set up the fluid
+   hemocell.initializeCellfield();           // 3. set up the cells
+   hemocell.addCellType<RbcHighOrderModel>("RBC", RBC_FROM_SPHERE);
+   hemocell.setOutputs("RBC", { /* ... */ });
+   hemocell.setFluidOutputs({ /* ... */ });
+   hemocell.loadParticles();                 // 4. place the cells
+   while (hemocell.iter < tmax) {            // 5. run
+       hemocell.iterate();
+       if (hemocell.iter % tmeas == 0) hemocell.writeOutput();
+   }
+
+Construction and lifecycle
+--------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - Member
+     - Purpose
+   * - ``HemoCell(configFile, argc, argv)``
+     - Construct the simulation from a ``config.xml``. ``argc``/``argv`` are
+       passed through to Palabos for MPI initialisation.
+   * - ``HemoCell(configFile, argc, argv, MPIHandle::External)``
+     - Same, but for when MPI is initialised outside HemoCell (HemoCell then
+       skips ``plbInit``).
+   * - ``iter``
+     - The current iteration counter (read it to drive your main loop).
+   * - ``cfg``
+     - The parsed configuration; read values with
+       ``(*hemocell.cfg)["domain"]["dx"].read<T>()``.
+
+Setting up the fluid
+--------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - Member
+     - Purpose
+   * - ``initializeLattice(management)``
+     - Create the fluid lattice from a Palabos ``MultiBlockManagement3D``. Call
+       after defining any pre-inlets and before ``initializeCellfield()``.
+   * - ``lattice``
+     - The underlying Palabos ``MultiBlockLattice3D`` (set periodicity,
+       boundaries, driving force, ... directly on it).
+   * - ``latticeEquilibrium(rho, vel)``
+     - Initialise every fluid node to a density and velocity (lattice units).
+   * - ``setSystemPeriodicity(axis, bool)``
+     - Make the whole system periodic along an axis.
+   * - ``setSystemPeriodicityLimit(axis, limit)``
+     - Limit how many times a particle may wrap around a periodic axis.
+
+Setting up the cells
+--------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - Member
+     - Purpose
+   * - ``initializeCellfield()``
+     - Create the cell-fields / particle-field container. Call before adding
+       cell types.
+   * - ``addCellType<Model>(name, constructType)``
+     - Register a cell type with a :ref:`mechanical model
+       <reference/mechanical_models:Mechanical (cell) models>` and a
+       :ref:`construction method <concepts/cell_model:Building the mesh>`. The
+       ``name`` must match the ``name.xml`` / ``name.pos`` files.
+   * - ``loadParticles()``
+     - Load the initial cell positions from the ``*.pos`` files. Call after all
+       cell types, outputs, and periodicity are configured.
+   * - ``setInitialMinimumDistanceFromSolid(name, d)``
+     - Keep cells at least ``d`` away from solids at initialisation. Must be
+       called **before** ``loadParticles()``.
+
+Controlling cost (time-scale separation)
+----------------------------------------
+
+See :ref:`concepts/units_and_scaling:Time-scale separation` for the concept.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 52 48
+
+   * - Member
+     - Purpose
+   * - ``setMaterialTimeScaleSeparation(name, n)``
+     - Re-evaluate this cell type's mechanical model every ``n`` fluid steps.
+   * - ``setParticleVelocityUpdateTimeScaleSeparation(n)``
+     - Interpolate fluid velocity to particles every ``n`` fluid steps.
+   * - ``setRepulsionTimeScaleSeperation(n)``
+     - Update cell–cell repulsion every ``n`` fluid steps.
+   * - ``setInteriorViscosityTimeScaleSeperation(n, n_grid)``
+     - Update interior viscosity every ``n`` steps, with a full-grid pass every
+       ``n_grid`` steps.
+
+Optional physics
+----------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 48 52
+
+   * - Member
+     - Purpose
+   * - ``setRepulsion(constant, cutoff)``
+     - Enable and parameterise short-range cell–cell repulsion. See
+       :ref:`advanced_cases/repulsion:Repulsive forces`.
+   * - ``enableBoundaryParticles(constant, cutoff, timestep)``
+     - Enable repulsion between cells and solid boundaries.
+   * - ``enableSolidifyMechanics(name)``
+     - Enable solidification (clotting) for a cell type. Requires the
+       ``SOLIDIFY_MECHANICS`` build (see :ref:`constants`).
+
+Output and checkpointing
+------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - Member
+     - Purpose
+   * - ``setOutputs(name, {...})``
+     - Choose which per-cell fields to write for a cell type. See
+       :ref:`reference/outputs:Output fields`.
+   * - ``setFluidOutputs({...})``
+     - Choose which fluid fields to write.
+   * - ``setCEPACOutputs({...})``
+     - Choose outputs for the advection–diffusion (CEPAC) field, when used.
+   * - ``outputInSiUnits``
+     - ``true`` (default) writes output in SI units; ``false`` writes lattice
+       units.
+   * - ``writeOutput()``
+     - Write the requested HDF5/CSV output for the current iteration.
+   * - ``saveCheckPoint()`` / ``loadCheckPoint()``
+     - Write / restore a full checkpoint (see :ref:`QuickStart:Resuming from a
+       checkpoint`).
+
+Running and load balancing
+--------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - Member
+     - Purpose
+   * - ``iterate()``
+     - Advance the coupled fluid + cells by one fluid time step. If you drive
+       the flow with an external force vector, re-apply it after every
+       ``iterate()``.
+   * - ``checkExitSignals()``
+     - Check whether an exit signal (e.g. from the scheduler) was caught.
+   * - ``calculateFractionalLoadImbalance()``
+     - Return the current fractional load imbalance across processes.
+   * - ``doLoadBalance()`` / ``doRestructure()``
+     - Rebalance / restructure the domain across processes. See
+       :ref:`concepts/parallelism:Load balancing`.

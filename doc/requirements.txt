@@ -1,4 +1,26 @@
-breathe
-Sphinx
-sphinxcontrib.bibtex
-sphinxcontrib.inlinesyntaxhighlight
+# Python dependencies for building the HemoCell documentation with Sphinx.
+#
+# NOTE: Doxygen is NOT a Python package. It must be installed separately as a
+# system package (e.g. `apt-get install doxygen graphviz`). Sphinx invokes it
+# automatically during the build (see conf.py).
+
+# Core documentation generator
+Sphinx>=7.2
+
+# Sphinx Book Theme (modern, responsive theme used by HemoCell)
+sphinx-book-theme>=1.1
+
+# Markdown support, so .md files (README, CHANGELOG, ...) can be reused in the docs
+myst-parser>=2.0
+
+# "Copy" buttons on code blocks
+sphinx-copybutton>=0.5
+
+# Grids, cards, tabs and other layout components
+sphinx-design>=0.5
+
+# Bridges Doxygen XML into Sphinx for the C++ API reference
+breathe>=4.35
+
+# BibTeX bibliography support (publication list)
+sphinxcontrib-bibtex>=2.6

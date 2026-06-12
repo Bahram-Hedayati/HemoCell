@@ -1,234 +1,170 @@
-.. HemoCell documentation master file, created by
-   sphinx-quickstart on Mon Nov 27 16:26:36 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. HemoCell documentation master file.
 
 HemoCell
 ========
 
-HemoCell is a parallel computing framework for simulation of dense deformable
-capsule suspensions, with special emphasis on blood flows and blood related
-vesicles (cells). The library implements validated mechanical models for
-Red Blood Cells (RBCs) and is capable of reproducing emergent transport
-characteristics of such complex cellular systems :cite:`Zavodszky:2017`.
-HemoCell is capable of handling large simulation domain sizes and high shear-rate
-flows providing a virtual environment to evaluate a wide palette of microfluidic
-scenarios :cite:`zavodszky2019red,czaja2018cell,van2021haemodynamic`.
+.. image:: _static/logo.png
+   :alt: HemoCell
+   :align: center
+   :width: 280px
 
-For the simulation of dense flows, HemoCell employs the Immersed Boundary
-Method (IBM) to couple the immersed vesicles, e.g. RBCs, platelets (PLTs),
-leukocytes, or other custom cell types to the fluid (e.g., plasma). The particles
-are tracked using a Lagrangian discrete element approach, while the flow field is
-implemented using the lattice Boltzmann method (LBM). The current implementation
-is based on the `Palabos`_ library. HemoCell manages all required data structures,
-such as materials and cell models (particles), their interactions within the flow field,
-load-balancing, and communication among the processors.
+|
 
-The library provides validated and highly optimised mechanical models for the
-simulation of red blood cells :cite:`tarksalooyeh2019optimizing,Alowayyed:2018`.
-Furthermore, the library is extensible and allows to implement different mechanical
-(cell) models :cite:`czaja2020influence,Haan:2018` and cell-binding techniques
-:cite:`van2019identifying` to study numerous application-specific behaviour.
+**HemoCell** (HighpErformance MicrOscopic CELlular Library) is a parallel
+computing framework for the simulation of dense deformable capsule suspensions,
+with special emphasis on blood flows and blood-related vesicles (cells). The
+library implements validated mechanical models for Red Blood Cells (RBCs) and
+is capable of reproducing emergent transport characteristics of such complex
+cellular systems :cite:`Zavodszky:2017`. HemoCell handles large simulation
+domains and high shear-rate flows, providing a virtual environment to evaluate a
+wide palette of microfluidic scenarios
+:cite:`zavodszky2019red,czaja2018cell,van2021haemodynamic`.
+
+For the simulation of dense flows, HemoCell employs the Immersed Boundary Method
+(IBM) to couple immersed vesicles — e.g. RBCs, platelets (PLTs), leukocytes, or
+custom cell types — to the fluid (e.g. plasma). The cells are tracked with a
+Lagrangian discrete-element approach, while the flow field is solved with the
+lattice Boltzmann method (LBM), built on the `Palabos`_ library. HemoCell manages
+all required data structures — materials and cell models, their interactions
+within the flow field, load balancing, and inter-processor communication — so
+that the parallelism is largely hidden from the user. See :ref:`concepts` for
+the ideas behind the framework.
 
 .. figure:: _static/hemocell-structure.png
    :alt: Code structure of HemoCell
    :align: center
    :figwidth: 90%
 
-The code is implemented in C/C++ with parallelism achieved through `MPI
-<https://en.wikipedia.org/wiki/Message_Passing_Interface>`_, although only for
-advanced use-cases the users are required to interact with the parallelism,
-which is otherwise hidden from the user. The system is build with `CMake
-<https://cmake.org/>`_ and runs on a variety of systems and HPC clusters (see
-:ref:`getting started<QuickStart:HemoCell Getting Started>`).
+   High-level structure of HemoCell.
 
-Multiple examples are provided to illustrate typical use-cases of HemoCell:
+Where to start
+--------------
 
-* Developing mechanical models for different cell types and their interaction.
-  These are typically quick running simulations on single processors (order of
-  seconds to minutes) that aim to investigate/validate different formulations of
-  mechanical models for the immersed cells, e.g.
-  :ref:`shearing<cases/stretchcell:One stretching cell>`,
-  :ref:`stretching<cases/onecellshear:One shearing cell>`, or
-  :ref:`"parachuting"<cases/parachuting:A parachuting cell>` of a single cell.
-  Additionally, one might want to study the interaction between colliding
-  particles, e.g. :ref:`cases/cellCollision_interior_viscosity:Colliding cells
-  with interior viscosity`.
+.. grid:: 1 2 2 3
+   :gutter: 3
 
-  .. image:: _static/cases/rbc-plt-trajectory.png
-     :width: 49%
-  .. image:: _static/cases/parachuting-sideview.png
-     :width: 49%
+   .. grid-item-card:: :octicon:`rocket;1.5em;sd-mr-1` Getting Started
+      :link: QuickStart
+      :link-type: doc
 
-* Studying large simulation domains with large number of immersed particles.
-  These simulations are typically derived from straight channel flow conditions,
-  where the domain size, number of immersed particles, and flow conditions are varied.
-  These simulations can vary from quick running simulations on small hardware
-  (desktop/workstation) to long lasting simulations on large HPC compute
-  clusters with thousands of cores. Examples of smaller pipe flow cases are
-  presented in :ref:`cases/pipeflow:Pipe flow` and
-  :ref:`cases/pipeflow_with_preinlet:Pipe flow with periodic inflow`.
+      Install and build HemoCell, then run and post-process your first
+      simulation.
 
-  .. image:: _static/cases/pipeflow-initial.png
-     :width: 49%
-  .. image:: _static/cases/pipeflow-large.jpg
-     :width: 49%
+   .. grid-item-card:: :octicon:`book;1.5em;sd-mr-1` Tutorials
+      :link: hemocell_cases
+      :link-type: doc
 
-*When using HemoCell please cite the corresponding HemoCell paper(s)*
-:cite:`Zavodszky:2017`.
+      Worked example cases, from a single shearing cell to full pipe flow with
+      a pre-inlet.
 
-User Guide
-==========
+   .. grid-item-card:: :octicon:`light-bulb;1.5em;sd-mr-1` Concepts
+      :link: concepts/index
+      :link-type: doc
 
-.. toctree::
-   :maxdepth: 2
+      The IBM–LBM coupling, units and scaling, the cell model, and how
+      simulations are parallelised.
 
-   QuickStart
-   hemocell_cases
-   Case
-   xml_files
-   helper_scripts
-   advanced_cases
-   visualization
-   utilities
-   common_mistakes
+   .. grid-item-card:: :octicon:`tools;1.5em;sd-mr-1` How-to Guides
+      :link: advanced_cases
+      :link-type: doc
 
-.. toctree::
-   :maxdepth: 1
+      Task-oriented recipes: custom cells, pure-flow runs, repulsion,
+      visualisation, and the helper tools.
 
-   Downloads
+   .. grid-item-card:: :octicon:`list-unordered;1.5em;sd-mr-1` Reference
+      :link: reference/index
+      :link-type: doc
 
-.. toctree::
-   :maxdepth: 1
+      Configuration tags, the HemoCell C++ API, output fields, mechanical
+      models, and the full Doxygen API.
 
-   FAQ
+   .. grid-item-card:: :octicon:`people;1.5em;sd-mr-1` Community
+      :link: community/index
+      :link-type: doc
 
-.. toctree::
-   :maxdepth: 2
+      FAQ, common mistakes, downloads, how to contribute, and how to cite
+      HemoCell.
 
-   hemocell_doxygen
-
-Acknowledgments
-================
-
-HemoCell is developed and maintained by several researchers. The list of developpers and mainteainers at the last document update:
-
-
-.. list-table::
-  :header-rows: 0
-
-  * - Gábor Závodszky
-    - Developer and Co-PI
-    - G.Zavodszky at uva.nl
-  * - Alfons Hoekstra
-    - Co-PI
-    -
-  * - Christian Spieker
-    - Developer
-    - C.J.Spieker at uva.nl
-  * - Jelle van Dijk
-    - Developer
-    - j.vandijk3 at uva.nl
-  * - Konstantinos Asteriou
-    - Former developer
-    - 
-  * - Mark Wijzenbroek
-    - Former package maintainer
-    -
-  * - Eleanor Broadway
-    - Former GPU developer
-    - 
-  * - Ben Czaja
-    - Former developer
-    - 
-  * - Max van der Kolk
-    - Former developer
-    -
-  * - Lampros Mountrakis
-    - Former developer
-    -
-  * - Victor Azizi
-    - Former developer
-    -
-  * - Britt van Rooij
-    - Former developer
-    -
-  * - Saad Allowayyed
-    - Former developer
-    -
-  * - Maurits Bos
-    - Former contributor
-    -
-  * - Daan van Ingen
-    - Former contributor
-    -
-  * - Hendrik Cornelisse
-    - Former contributor
-    -
-  * - Mike de Haan
-    - Former contributor
-    -
-  * - Kevin de Vries
-    - Former contributor
-    -
-  * - Jonathan de Bouter
-    - Former contributor
-    -
-  * - Roland Joo-Kovacs
-    - Former contributor
-    -
-
-
-If you have any question please open a `Github discussion <https://github.com/UvaCsl/HemoCell/discussions>`_.
-
-Citing HemoCell
----------------
-
-*When using HemoCell please cite the HemoCell paper:*
-
-.. code-block:: text
-
-  @article{Zavodszky:2017,
-    author={Závodszky, Gábor and van Rooij, Britt and Azizi, Victor and Hoekstra, Alfons},
-    title={Cellular Level In-silico Modeling of Blood Rheology with An Improved Material Model for Red Blood Cells},
-    journal={Frontiers in Physiology},
-    volume={8},
-    pages={563},
-    year={2017},
-    url={https://www.frontiersin.org/article/10.3389/fphys.2017.00563},
-    doi={10.3389/fphys.2017.00563},
-    issn={1664-042X},
-  }
-
-HemoCell related publications
-=============================
-
-.. bibliography:: refs.bib
-   :style: unsrt
-   :all:
-
-.. _Palabos: https://palabos.unige.ch/
-
-Contributions
-=============
-
-Before you contribute
+What you can simulate
 ---------------------
 
-* Please make sure that your contribution falls under HemoCell license.
-* If you want to resolve a bug : make sure that it still exists. 
-  You can build the latest master branch and verify that the error is reproducable.
-* Make sure that the bug you want to report is not already reported in our Github issues
-  and that no one is working on it.
-* If you have any questions about the software or if you are facing any issues using it
-  feel free to open a `Github discussion <https://github.com/UvaCsl/HemoCell/discussions>`_.
+**Single-cell mechanics.** Quick simulations (seconds to minutes, often on a
+single processor) used to investigate or validate mechanical models for immersed
+cells, such as :ref:`shearing <cases/onecellshear:One shearing cell>`,
+:ref:`stretching <cases/stretchcell:One stretching cell>`, or
+:ref:`"parachuting" <cases/parachuting:A parachuting cell>` of a single cell, or
+the interaction between
+:ref:`colliding cells <cases/cellCollision_interior_viscosity:Colliding cells with interior viscosity>`.
 
-Code contribution
------------------
+.. image:: _static/cases/rbc-plt-trajectory.png
+   :width: 49%
+.. image:: _static/cases/parachuting-sideview.png
+   :width: 49%
 
-* Create a fork of HemoCell repository.
-* Create a new branch from the develop branch for the issue you want to work on. 
-  Please give a name to your branch that is relevant to the issue.
-* Modify/add code to your branch.
-* Before pushing make sure you have not included unrelated changes and that the project builds properly.
-* After you are done, push your changes and create a pull request from your branch to the develop branch.
+**Bulk flows.** Large domains with many immersed particles, typically derived
+from straight-channel flow. These range from quick runs on a workstation to
+long simulations on HPC clusters with thousands of cores. See
+:ref:`cases/pipeflow:Pipe flow` and
+:ref:`cases/pipeflow_with_preinlet:Pipe flow with periodic inflow`.
+
+.. image:: _static/cases/pipeflow-initial.png
+   :width: 49%
+.. image:: _static/cases/pipeflow-large.jpg
+   :width: 49%
+
+.. admonition:: Citing HemoCell
+   :class: tip
+
+   When using HemoCell, please cite the corresponding HemoCell paper(s). See
+   :ref:`citing` for details.
+
+.. Hidden top-level navigation. The sidebar is generated from the captions
+.. below; the landing page itself uses the cards above for navigation.
+
+.. toctree::
+   :caption: Getting Started
+   :maxdepth: 2
+   :hidden:
+
+   QuickStart
+   Case
+
+.. toctree::
+   :caption: Tutorials
+   :maxdepth: 2
+   :hidden:
+
+   hemocell_cases
+
+.. toctree::
+   :caption: Concepts
+   :maxdepth: 1
+   :hidden:
+
+   concepts/index
+
+.. toctree::
+   :caption: How-to Guides
+   :maxdepth: 1
+   :hidden:
+
+   advanced_cases
+   visualization
+   helper_scripts
+   utilities
+
+.. toctree::
+   :caption: Reference
+   :maxdepth: 1
+   :hidden:
+
+   reference/index
+
+.. toctree::
+   :caption: Community
+   :maxdepth: 1
+   :hidden:
+
+   community/index
+
+.. _Palabos: https://palabos.unige.ch/

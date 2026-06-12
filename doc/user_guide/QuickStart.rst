@@ -65,8 +65,8 @@ The patching should succeed even though there might be an offset in some files.
 At this point HemoCell should be ready for compilation and development.
 
 (Optional) `Parmetis`_ is used for upcoming load-balancing routines (in development atm.). 
-It can be installed via adding ``libparmetis-dev`` on Ubuntu, or it can be downloaded from their `downloads
-<http://glaros.dtc.umn.edu/gkhome/metis/parmetis/download>`_. Due to the
+It can be installed via adding ``libparmetis-dev`` on Ubuntu, or it can be downloaded from the
+`ParMETIS repository <https://github.com/KarypisLab/ParMETIS>`_. Due to the
 license of Parmetis we cannot distribute it with hemocell. The Parmetis
 download should be copied to the  ``./hemocell/external/`` directory. If you
 need it because you want load balancing to be enabled you have to extract it
@@ -212,7 +212,7 @@ checkpoint.
   to be the same as the number of processors used for the initial run.
 
 .. _Paraview: https://paraview.org
-.. _XDMF: http://xdmf.org/index.php/Main_Page
+.. _XDMF: https://www.xdmf.org/
 .. _GNU Patch: https://savannah.gnu.org/projects/patch/
 .. _IntelMPI: https://software.intel.com/content/www/us/en/develop/tools/mpi-library.html
 .. _OpenMPI: https://www.open-mpi.org/
@@ -220,5 +220,5 @@ checkpoint.
 .. _CMake: https://cmake.org/
 .. _HDF5: https://www.hdfgroup.org/
 .. _h5pY: https://www.h5py.org/
-.. _Parmetis: http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview
+.. _Parmetis: https://github.com/KarypisLab/ParMETIS
 .. _Palabos: https://palabos.unige.ch/
