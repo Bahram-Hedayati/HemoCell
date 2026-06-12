@@ -12,17 +12,20 @@ update:
   :header-rows: 0
 
   * - Gábor Závodszky
-    - Developer and Co-PI
+    - Developer and PI
     - G.Zavodszky at uva.nl
   * - Alfons Hoekstra
     - Co-PI
     -
   * - Christian Spieker
     - Developer
-    - C.J.Spieker at uva.nl
+    - 
   * - Jelle van Dijk
     - Developer
-    - j.vandijk3 at uva.nl
+    - 
+  * - Mojtaba Amiraslanpour
+    - Former developer
+    - 
   * - Konstantinos Asteriou
     - Former developer
     -

@@ -88,7 +88,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'HemoCell'
-copyright = u'2024, Computational Science Lab, University of Amsterdam'
+copyright = u'2026, Computational Science Lab, University of Amsterdam'
 author = u'HemoCell Developers'
 
 # The version info for the project you're documenting, acts as replacement for
