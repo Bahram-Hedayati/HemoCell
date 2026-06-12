@@ -13,12 +13,12 @@ The following packages are requirements for compiling and/or running HemoCell fr
 Required package                   Tested versions
 ==========================         ==========================
 `OpenMpi`_                         4.1.6 
-`GCC`_                             12.3.0
+`GCC`_                             13.3.0
 `CMake`_                           3.28.3
 `HDF5`_                            1.10.10
 `GNU Patch`_                       2.7.6
 `h5py`_                            2.6.0
-`Palabos`_                         2.2.1
+`Palabos`_                         2.3.0
 `Parmetis`_ (optional)             4.0.3
 ==========================         ==========================
 
@@ -31,14 +31,14 @@ On Ubuntu 24.04 these dependencies can be installed by running::
   sudo apt-get install -y \
         make \
         cmake \
-        g++-12 \
+        g++ \
         libopenmpi-dev \
         libhdf5-dev \
         patch \
         python3-h5py
 
 The main external dependency `Palabos`_ has to be added and patched.
-We currently support the ``v2.2.1`` version with an additional small patch. This can be done in two ways. 
+We currently support the ``v2.3.0`` version with an additional small patch. This can be done in two ways. 
 
 1. To automatically download this specific Palabos version and apply our patch, run the setup script
 ``hemocell/setup.sh``::
@@ -52,8 +52,8 @@ At this point HemoCell should be ready for compilation and development, you can 
 <https://gitlab.com/unigespc/palabos/-/releases>`_. This is useful if you want to use a different version. After downloading, Palabos
 should be extracted to ``./hemocell/palabos``::
 
-  tar -xzf palabos-v2.2.1.tar.gz
-  mv palabos-v2.2.1 ./hemocell/palabos
+  tar -xzf palabos-v2.3.0.tar.gz
+  mv palabos-v2.3.0 ./hemocell/palabos
 
 After this Palabos must be patched, see :ref:`patching-palabos`. This can be
 done by running ``./patchPLB.sh`` from the ``./hemocell/patch/`` directory, like
