@@ -13,7 +13,7 @@ function(ConfigureGTest)
         return()
     endif()
 
-    set(git_tag release-1.10.0)
+    set(git_tag v1.17.0)
     message(STATUS "Setting up `googletests` ${git_tag}...")
 
     # Prevent overriding the parent project's compiler/linker settings

@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "profiler.h"
+#include <limits.h>
 
 #include "parallelism/mpiManager.h"
 
@@ -139,7 +140,8 @@ void Profiler::printStatistics_inner(int level, T & out) {
   if (!started) {
     out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0) << std::endl;
   } else {
-    out << std::string(level,' ') << name << ": " << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time + (std::chrono::high_resolution_clock::now() - start_time)).count()/1000.0) << std::endl;
+    out << std::string(level,' ') << name << ": " << 
+           std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time + (std::chrono::high_resolution_clock::now() - start_time)).count()/1000.0) << std::endl;
   }
   //Print all child timers
   for (std::pair<const std::string,Profiler> & timer_pair : timers) {
@@ -148,35 +150,93 @@ void Profiler::printStatistics_inner(int level, T & out) {
   }
 }
 
+template<typename T>
+void Profiler::printStatistics_JSON(T & out) {
+
+  if(started) this->stop_nowarn();
+
+  /* If has children current timer has children, print as object */
+  if( timers.size() > 0 ) {
+    // Print as element with children
+
+    /* Begin new object and add total timer > { "Name" : { "Total": xx, $CHILDREN}} */
+    out << "\"" << name << "\":{\"Total\":" << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0);
+
+    /* Output Childtimers */
+    for (std::pair<const std::string,Profiler> & timer_pair : timers) {
+      out << ",";
+
+      Profiler & timer = timer_pair.second;
+      timer.printStatistics_JSON(out);
+    }
+
+    out << "}";
+  } else {
+    /* If timer does not have childres, print; "NAMA": xxx */
+    out << "\"" << name << "\":" << std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(total_time).count()/1000.0);
+  }
+}
+
 void Profiler::printStatistics() {
   hemo::hlog << "Hemocell Profiler Statistics (Only Process 0):" << std::endl;
   printStatistics_inner(0, hemo::hlog);
 }
 
+
 void Profiler::outputStatistics() {
+  this->outputStatistics(plb::global::mpi().getSize());
+}
+
+/* Write statistics to file hlog.filename + ".statistics" */
+void Profiler::outputStatistics(int batchsize=INT_MAX) {
   std::fstream sout;
   bool opened = false;
-  int turn = 0;
-  
-  while (turn < plb::global::mpi().getSize()) {
-    if (turn == plb::global::mpi().getRank()) {
-      sout.open(hlog.filename + ".statistics",std::fstream::app);
+//  global.statistics.getCurrent()["outputStats"].start();
+  // TODO: Don't static the extention
+  int rank = plb::global::mpi().getRank();
+  batchsize = std::min(batchsize,plb::global::mpi().getSize());
+
+  for (int batchid = 0; batchid < batchsize; batchid++) {
+    /* Let all mpi processes wait for turn */
+    if (rank % batchsize == batchid) {
+
+      // TODO: Don't static the extention
+      sout.open(hlog.filename + ".statistics." + std::to_string(rank / batchsize) ,std::fstream::app);
+
+      /* If file failed to open, write to logfile */
       if (!sout.is_open()) {
         std::cout << "(Profiler) (Error) Opening " + hlog.filename << ".statistics, outputting everything to logfile instead" << std::endl;
         hemo::hlog << "Process " << plb::global::mpi().getRank() << ":" << std::endl;
         printStatistics_inner(1,hlog.logfile);
-      } else {
+     } else {
         opened = true;
-        sout << "Process " << plb::global::mpi().getRank() << ":" << std::endl;
-        printStatistics_inner(1,sout);
-      }
-      if (opened) {
-        sout.close();
-      }
-    }
+        
+        /* If first write start of JSON output */
+        if(rank / batchsize == 0){
+          sout << "{";
+        }
+
+        sout << "\"" << rank << "\"" << ": {";
+        printStatistics_JSON(sout);
+        sout << "}";
+
+        /* If last write closing JSON ouptut */
+        if(rank / batchsize == batchsize - 1){
+          sout << "}" << std::endl;
+        } else {
+          sout << "," << std::endl;
+        }
+
+     }
+     if (opened) {
+       sout.close();
+     }
+   }
+ 
     plb::global::mpi().barrier();
-    turn++;
   }  
+
+//  global.statistics.getCurrent().stop();
 }
 
 

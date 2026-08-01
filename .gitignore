@@ -29,6 +29,7 @@ output*/
 *.DS_Store
 *.plist
 settings.json
+.claude/
 
 # Common other ignore files (fuzzy searchers etc.)
 .ignore

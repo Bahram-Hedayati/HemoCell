@@ -1,6 +1,20 @@
 Frequently Asked Questions
 ==========================
 
+Q: How do I add a different constitutive model for RBCs?
+--------------------------------------------------------
+
+The current constitutive models for all the cells are implemented under the ``HemoCell/mechanics`` folder.
+For each model look for the implementation ``.cpp`` and the corresponding ``.h`` header file.
+For instance, for RBCs look into the ``rbcHighOrderModel`` files. The implementation contains the function 
+``ParticleMechanics`` that is called across the surface of the cell, and describes the forces arising from the deformation of the discretized (triangulated) surface of the cell. To create a new model duplicate the implementation and the header files under a different name, and redefine the contents of ``ParticleMechanics`` to any other desired model. Any model should work as long as it can be formulated as a force response function of deformation.
+
+Q: Can I include the internal structural mechanics of a cell in the constitutive model?
+---------------------------------------------------------------------------------------
+
+It is possible to define arbitrary forces on the surface of a capsule / cell. For an example on how to mimic the mechanics of a nucleated cell (with a stiff nucleus) lok at the mechanical model of ``wbcHighOrderModel``. It represents a generic single-nucleus white blood cell.
+
+
 Q: My cells are not initialized at the right position
 -----------------------------------------------------
 
@@ -53,5 +67,9 @@ addition to your example's main ``cpp``-file without referencing these
 files in the example's ``CMakeLists.txt`` file. Please refer to section
 :ref:`linking_external_code` for a brief description how to link these files.
 
+Q: Are there any undocumented features?
+---------------------------------------
+At the moment, sadly several of the new features lack documentation. These are often *researchware*, tested only partially, often in a single scenario. If you want to implement any new feature, please reach out first to make sure there is no unnecessary duplication of effort.
 
-Do you have a problem that is not listed here? please mail: info@hemocell.eu or create an issue at the github repository, you might help someone else as well!
+
+Do you have a problem that is not listed here? Please look at the `Discussion <https://github.com/UvaCsl/HemoCell/discussions>`_ section at the github repository! If you don't find your answer there open a new thread!

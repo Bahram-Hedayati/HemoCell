@@ -30,3 +30,4 @@ be excellent starting positions for typical simulations.
    cases/pipeflow
    cases/pipeflow_with_preinlet.rst
    cases/capillary_flow.rst
+   cases/more_examples.rst

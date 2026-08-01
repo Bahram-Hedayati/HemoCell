@@ -6,8 +6,9 @@ trap "exit" INT
 # added by applying the patch at `hemocell/patch`.
 
 # supported tag and download target
-tag="v2.3.0"
-target="https://gitlab.com/unigespc/palabos/-/archive/${tag}/palabos-${tag}.tar.gz"
+#tag="v2.3.0"
+#target="https://gitlab.com/unigespc/palabos/-/archive/${tag}/palabos-${tag}.tar.gz"
+target="https://gitlab.com/unigespc/palabos/-/archive/05712164d940a42e06afdd705249912fa0c49f14/palabos-05712164d940a42e06afdd705249912fa0c49f14.tar.gz"
 archive="palabos.tar.gz"
 
 # clean old palabos

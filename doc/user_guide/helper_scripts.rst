@@ -33,13 +33,13 @@ should be run within the ``hemocell/examples/<case>`` or
   cd hemocell/examples/<case>
   ../../scripts/batchPostProcess.sh
 
-hemocell/scripts/cartesius[_intel]_env.sh
-------------------------------------------
+hemocell/scripts/[_system_]_env.sh
+----------------------------------
 
-These files contain the corresponding build dependencies on the Cartesius system
-of SurfSara. They should be sourced instead of executed::
+These files contain the build dependency module setup on various HPC systems.
+For instance, ``snellius_env.sh`` contains the module settings to compile on the Snellius system of SURF. These scripts should be sourced instead of executed::
 
-  . ./scripts/cartesius_env.sh
+  . ./scripts/snellius_env.sh
 
 .. _ccsv:
 
@@ -52,6 +52,7 @@ the current directory. Use it in the ``tmp`` directory like this::
   cd hemocell/examples/<case>/tmp/
   . ./scripts/CellInfoMergeCSV.sh
 
+Note: this script is depracated, HemoCell now does this automatically on saving.
 
 .. _helper_scripts:xmf_to_x3d:
 
