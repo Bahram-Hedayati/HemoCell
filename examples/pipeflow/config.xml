@@ -11,6 +11,7 @@
     <checkpointDirectory>checkpoint</checkpointDirectory> <!-- relative to outputDirectory -->
     <logDirectory>log</logDirectory> <!-- relative to outputDirectory -->
     <logFile>logfile</logFile> <!-- relative to logDirectory, if it exists (possible with ../log as logDirectory), add .x for a new version -->
+    <enableCEPACfield>1</enableCEPACfield>
 </parameters>
 
 
@@ -37,8 +38,8 @@
 </domain>
 
 <sim>
-    <tmax> 100000 </tmax> <!-- total number of iterations -->
-    <tmeas>  1000 </tmeas> <!-- interval after which data is written --> 
+    <tmax> 2000 </tmax> <!-- total number of iterations -->
+    <tmeas> 100 </tmeas> <!-- interval after which data is written --> 
     <tcsv>  100 </tcsv> <!-- interval after which simple mean cell values are written to a CSV file --> 
     <tcheckpoint> 10000 </tcheckpoint> 
 </sim>
