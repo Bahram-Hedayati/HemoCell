@@ -1,0 +1,4 @@
+Vessel: mobile RBC-shaped transmitter and receiver
+
+See README.md in this directory for configuration, build, run and ParaView
+visualization instructions. The vessel target uses vessel.cpp.
