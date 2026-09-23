@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pltSimpleModel.h"
 #include "cellInfo.h"
 #include "writeCellInfoCSV.h"
+#include "glucoseTransport.h"
 #include "palabos3D.h"
 #include "palabos3D.hh"
 #include <fstream>
@@ -70,7 +71,7 @@ int main(int argc, char* argv[]) {
     Config& cfg = *hemocell.cfg;
     hemocell.outputInSiUnits = true;
     if (hemo::global.enableCEPACfield) {
-        throw std::runtime_error("Vessel step 1 requires enableCEPACfield=0; glucose release/sensing is not implemented yet.");
+        throw std::runtime_error("Vessel plasma-only glucose uses its own transport solver; keep enableCEPACfield=0.");
     }
     if (!cfg.checkpointed) {
         checkMachineInput("TX");
@@ -142,20 +143,33 @@ int main(int argc, char* argv[]) {
         // Warm up only plasma, then output the initial machine positions at t=0.
         for (plint i = 0; i < cfg["parameters"]["warmup"].read<plint>(); ++i)
             hemocell.lattice->collideAndStream();
-        hemocell.writeOutput();
-        writeCellInfo_CSV(hemocell);
     }
+    vessel::GlucoseTransport glucose(hemocell);
+    glucose.initialize();
+    if (cfg.checkpointed) glucose.loadCheckpoint();
+    hemocell.writeOutput();
+    glucose.writeOutput();
     while (hemocell.iter < tmax) {
+        glucose.advance(); // release and transport on the current plasma geometry
         hemocell.iterate(); // all four cell types use the same mobile IBM coupling
         drive();
+        glucose.updateMovingGeometry(); // conservatively evacuate newly covered nodes
         if (hemocell.iter % tmeas == 0) {
             checkMachines(hemocell);
             hemocell.writeOutput();
+            glucose.writeOutput();
         }
         if (hemocell.iter % tcsv == 0) writeCellInfo_CSV(hemocell);
-        if (hemocell.iter % tcheckpoint == 0) hemocell.saveCheckPoint();
+        if (hemocell.iter % tcheckpoint == 0) {
+            hemocell.saveCheckPoint();
+            glucose.saveCheckpoint();
+        }
     }
     checkMachines(hemocell);
+    if (hemocell.iter % tmeas != 0) {
+        hemocell.writeOutput();
+        glucose.writeOutput();
+    }
     hlog << "(Vessel) Simulation finished." << endl;
     return 0;
 }

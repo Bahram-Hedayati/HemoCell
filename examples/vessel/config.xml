@@ -37,6 +37,12 @@
     <RepCutoff> 0.7 </RepCutoff> <!-- RepulsionCutoff -->
 </domain>
 
+<!-- Expected concentration model, plasma-only; release starts after warmup. -->
+<glucose>
+    <diffusionCoefficient>9.2e-10</diffusionCoefficient> <!-- m^2/s -->
+    <releaseRate>100</releaseRate> <!-- molecules/s, uniform over moving TX area -->
+</glucose>
+
 <sim>
     <tmax> 2000 </tmax> <!-- total number of iterations -->
     <tmeas> 100 </tmeas> <!-- interval after which data is written -->
