@@ -1,9 +1,11 @@
 #include "glucoseGrid.h"
+#include "surfaceRay.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <sstream>
 #include <unordered_map>
 
 namespace vessel {
@@ -126,26 +128,29 @@ void GlucoseGrid::updateGeometry(const std::vector<Mesh>& meshes) {
                 const int u=(axis+1)%3,v=(axis+2)%3;
                 std::vector<std::vector<double>> rays(dims[u]*dims[v]);
                 for (const Triangle& tri:imageTriangles) {
-                    const Vec e1=sub(tri.b,tri.a),e2=sub(tri.c,tri.a);
-                    const double det=e1[u]*e2[v]-e1[v]*e2[u];
-                    if(std::abs(det)<1e-12) continue;
                     const int ulo=std::max(0,int(std::ceil(std::min({tri.a[u],tri.b[u],tri.c[u]})-1e-7)));
                     const int uhi=std::min(dims[u]-1,int(std::floor(std::max({tri.a[u],tri.b[u],tri.c[u]})+1e-7)));
                     const int vlo=std::max(0,int(std::ceil(std::min({tri.a[v],tri.b[v],tri.c[v]})-1e-7)));
                     const int vhi=std::min(dims[v]-1,int(std::floor(std::max({tri.a[v],tri.b[v],tri.c[v]})+1e-7)));
                     for(int j=vlo;j<=vhi;++j) for(int i=ulo;i<=uhi;++i) {
-                        // Tiny distinct offsets avoid double counting mesh edges.
-                        const double du=i+1.234e-8-tri.a[u],dv=j+2.345e-8-tri.a[v];
-                        const double b=(du*e2[v]-dv*e2[u])/det,c=(e1[u]*dv-e1[v]*du)/det;
-                        if(b>=0 && c>=0 && b+c<=1)
-                            rays[i+dims[u]*j].push_back(tri.a[axis]+b*e1[axis]+c*e2[axis]);
+                        double hit;
+                        if(surfaceRayIntersection(tri.a,tri.b,tri.c,axis,
+                                                  i+1.234e-8L,j+2.345e-8L,hit))
+                            rays[i+dims[u]*j].push_back(hit);
                     }
                 }
                 for(int j=0;j<dims[v];++j) for(int i=0;i<dims[u];++i) {
                     auto& hits=rays[i+dims[u]*j]; if(hits.empty()) continue;
                     std::sort(hits.begin(),hits.end());
-                    hits.erase(std::unique(hits.begin(),hits.end(),[](double a,double b){return std::abs(a-b)<1e-7;}),hits.end());
-                    if(hits.size()%2) throw std::runtime_error("Unclosed membrane ray; refine mesh or inspect cell geometry");
+                    // Keep paired close crossings. Shared-edge duplicates are
+                    // excluded by the half-open triangle predicate above.
+                    if(hits.size()%2) {
+                        std::ostringstream error;
+                        error << "Unclosed membrane ray: cell=" << mesh.id << " image=" << image
+                              << " axis=" << axis << " transverse_indices=" << i << "," << j << " hits=";
+                        for(double hit:hits)error << hit << ",";
+                        throw std::runtime_error(error.str());
+                    }
                     int p[3];p[u]=i;p[v]=j;
                     for(double hit:hits) {
                         const int k=int(std::floor(hit));

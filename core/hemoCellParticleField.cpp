@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mollerTrumbore.h"
 #include "bindingField.h"
 #include "interiorViscosity.h"
+#include "voxelWallContact.h"
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wint-in-bool-context"
 #include <Eigen3/Eigenvalues>
@@ -565,7 +566,34 @@ void HemoCellParticleField::setlocalDomain(Box3D & localDomain_) {
 
 void HemoCellParticleField::advanceParticles() {
   for(HemoCellParticle & particle:particles){
+    const auto oldPosition = particle.sv.position;
     particle.advance();
+    if (cellFields->preserveMembranesAtWalls) {
+      const auto location = atomicLattice->getLocation();
+      const auto bounds = atomicLattice->getBoundingBox();
+      std::array<double,3> from{{oldPosition[0]-location.x,
+                                oldPosition[1]-location.y,oldPosition[2]-location.z}};
+      std::array<double,3> to{{particle.sv.position[0]-location.x,
+                              particle.sv.position[1]-location.y,particle.sv.position[2]-location.z}};
+      const auto solid = [&](int x,int y,int z) {
+        // Far-away particle ghosts need not lie in this block's fluid halo.
+        // Their owning block evaluates contact against its own fluid geometry.
+        return x>=bounds.x0 && x<=bounds.x1 && y>=bounds.y0 && y<=bounds.y1
+            && z>=bounds.z0 && z<=bounds.z1
+            && atomicLattice->get(x,y,z).getDynamics().isBoundary();
+      };
+      bool contacted=false;
+      const auto constrained=constrainVoxelWallMotion(from,to,solid,contacted);
+      if(contacted) {
+        if(isContainedABS(oldPosition,localDomain))++cellFields->wallContactCorrections;
+        particle.sv.position[0]=constrained[0]+location.x;
+        particle.sv.position[1]=constrained[1]+location.y;
+        particle.sv.position[2]=constrained[2]+location.z;
+        // Keep the accepted velocity until the next IBM interpolation update.
+        particle.sv.v=particle.sv.position-oldPosition;
+      }
+      continue; // retain vertex identity/connectivity; never delete on contact
+    }
     //By lack of better place, check if it is on a boundary, if so, delete it
     plb::Box3D const box = atomicLattice->getBoundingBox();
     plb::Dot3D const& location = atomicLattice->getLocation();

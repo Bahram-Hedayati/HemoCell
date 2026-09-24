@@ -17,7 +17,9 @@ target_link_libraries(${EXEC_NAME} ${HDF5_C_HL_LIBRARIES} ${HDF5_LIBRARIES})
 
 # Standalone numerical tests: no MPI initialization or GoogleTest download.
 add_executable(vessel_glucose_test EXCLUDE_FROM_ALL tests/test_glucose_grid.cpp glucoseGrid.cpp)
-target_include_directories(vessel_glucose_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(vessel_glucose_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/core)
+target_compile_definitions(vessel_glucose_test PRIVATE
+    VESSEL_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
 set_target_properties(vessel_glucose_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
 if(BUILD_TESTING)
     add_test(NAME vessel_glucose_grid COMMAND vessel_glucose_test)

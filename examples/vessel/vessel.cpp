@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "palabos3D.hh"
 #include <fstream>
 #include <stdexcept>
+#include <mpi.h>
 
 using namespace hemo;
 
@@ -48,6 +49,10 @@ void checkMachines(HemoCell& simulation) {
          << " time=" << simulation.iter * param::dt << " s; TX=" << tx << " RX=" << rx
          << " RBC=" << CellInformationFunctionals::getNumberOfCellsFromType(&simulation, "RBC")
          << " PLT=" << CellInformationFunctionals::getNumberOfCellsFromType(&simulation, "PLT") << endl;
+    unsigned long long wallContacts=0;
+    MPI_Allreduce(&simulation.cellfields->wallContactCorrections,&wallContacts,1,
+                  MPI_UNSIGNED_LONG_LONG,MPI_SUM,MPI_COMM_WORLD);
+    hlog << "(Vessel) wall-contact corrections since startup=" << wallContacts << endl;
 }
 
 void checkMachineInput(const std::string& role) {
@@ -65,6 +70,11 @@ void checkMachineInput(const std::string& role) {
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <configuration.xml>" << std::endl;
+        return 1;
+    }
+    const bool membranesOnly = argc == 3 && std::string(argv[2]) == "--diagnose-membranes-only";
+    if (argc > 2 && !membranesOnly) {
+        std::cerr << "Unknown diagnostic option" << std::endl;
         return 1;
     }
     HemoCell hemocell(argv[1], argc, argv);
@@ -109,6 +119,7 @@ int main(int argc, char* argv[]) {
     hemocell.latticeEquilibrium(1., plb::Array<T,3>(0., 0., 0.));
     hemocell.lattice->initialize();
     hemocell.initializeCellfield();
+    hemocell.cellfields->preserveMembranesAtWalls = true;
 
     // Independent material files permit later geometry/mechanics customization.
     for (const std::string name : {"RBC", "TX", "RX"}) {
@@ -145,22 +156,28 @@ int main(int argc, char* argv[]) {
             hemocell.lattice->collideAndStream();
     }
     vessel::GlucoseTransport glucose(hemocell);
-    glucose.initialize();
-    if (cfg.checkpointed) glucose.loadCheckpoint();
+    if (membranesOnly) {
+        hlog << "(Diagnostic) Membrane-only run: glucose evolution/output disabled; not a molecular simulation." << endl;
+        glucose.checkMembranes();
+    } else {
+        glucose.initialize();
+        if (cfg.checkpointed) glucose.loadCheckpoint();
+    }
     hemocell.writeOutput();
-    glucose.writeOutput();
+    if (!membranesOnly) glucose.writeOutput();
     while (hemocell.iter < tmax) {
-        glucose.advance(); // release and transport on the current plasma geometry
+        if (!membranesOnly) glucose.advance(); // release and transport on the current plasma geometry
         hemocell.iterate(); // all four cell types use the same mobile IBM coupling
         drive();
-        glucose.updateMovingGeometry(); // conservatively evacuate newly covered nodes
+        if (membranesOnly) glucose.checkMembranes();
+        else glucose.updateMovingGeometry(); // conservatively evacuate newly covered nodes
         if (hemocell.iter % tmeas == 0) {
             checkMachines(hemocell);
             hemocell.writeOutput();
-            glucose.writeOutput();
+            if (!membranesOnly) glucose.writeOutput();
         }
         if (hemocell.iter % tcsv == 0) writeCellInfo_CSV(hemocell);
-        if (hemocell.iter % tcheckpoint == 0) {
+        if (!membranesOnly && hemocell.iter % tcheckpoint == 0) {
             hemocell.saveCheckPoint();
             glucose.saveCheckpoint();
         }
@@ -168,7 +185,7 @@ int main(int argc, char* argv[]) {
     checkMachines(hemocell);
     if (hemocell.iter % tmeas != 0) {
         hemocell.writeOutput();
-        glucose.writeOutput();
+        if (!membranesOnly) glucose.writeOutput();
     }
     hlog << "(Vessel) Simulation finished." << endl;
     return 0;

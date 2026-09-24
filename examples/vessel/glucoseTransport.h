@@ -13,6 +13,7 @@ class GlucoseTransport {
 public:
     explicit GlucoseTransport(hemo::HemoCell& simulation);
     void initialize();
+    void checkMembranes() { gatherMeshes(); } // diagnostic: no scalar evolution
     void advance();
     void updateMovingGeometry();
     void writeOutput();
@@ -26,6 +27,9 @@ private:
     std::size_t size;
     std::unique_ptr<GlucoseGrid> grid;
     std::vector<Vec> velocity;
+    std::vector<Mesh> previousMeshes; // last complete geometry for failure diagnostics
+    unsigned int gatheredIteration = 0;
+    void writeMembraneDiagnostics(const std::string& error);
     std::vector<std::vector<Face>> topology;
     std::vector<int> vertexCounts;
     std::string outputDirectory;

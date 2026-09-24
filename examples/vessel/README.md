@@ -11,6 +11,21 @@ transport. RX surface sensing remains a later step.
 The executable is built from `vessel.cpp`. The copied `pipeflow.cpp` is retained
 as reference and is not compiled by this target. `examples/pipeflow` is unchanged.
 
+## Wall and intersection corrections: validation pending
+
+The source now constrains membrane vertices at voxelized solid walls instead of
+deleting them, and uses half-open triangle coverage to avoid merging nearby
+valid ray intersections. Vessel opts into the wall constraint; other examples
+retain their prior behavior. This is a numerical contact model whose effect on
+near-wall motion still needs validation.
+
+**This corrected version has not been built or run by the assistant.** Build,
+regression-test and simulation commands are in [DIAGNOSTICS.md](DIAGNOSTICS.md).
+The validation results elsewhere in this README describe the earlier version.
+A rebuild is required: changes include `core/hemoCellFields.h`,
+`core/hemoCellParticleField.cpp` and the new `core/voxelWallContact.h`, as well as
+vessel sources. Include those core files in the next Git commit.
+
 ## Initial configuration
 
 The copied dense RBC/platelet position files are retained unchanged. They
@@ -384,3 +399,42 @@ recreating them; it leaves HDF5 simulation data intact. Without it, the converte
 skips existing XMF files, preserving any old malformed metadata. Then launch
 ParaView using `QT_QPA_PLATFORM=xcb`, open each type as a separate file series,
 select **XDMF Reader** (legacy), and click **Apply**. Start with `TX.*.xmf`.
+
+## Membrane-failure diagnostics
+
+`config_diagnostic.xml` runs to 6,500 iterations with snapshots every 1,000 and a
+checkpoint at 5,000. It reproduces the reported longer-run failure without
+changing the physics or disabling the impermeability check:
+
+```bash
+cmake --build /home/jorge/Bahram/HemoCell/build --target vessel --parallel 4
+cd /home/jorge/Bahram/HemoCell/examples/vessel
+mpirun -n 1 ./vessel config_diagnostic.xml
+```
+
+On a mesh-gather failure, the exception now identifies iteration, cell ID/type,
+vertex count and missing vertex IDs. Geometry-update failures also save diagnostics,
+including the affected cell and ray coordinates when intersection counting fails. Files under `output_diagnostic/glucose/`
+(or its numbered variant) are named `membrane_failure.<iteration>`:
+
+- `.txt`: failure message.
+- `.rank<N>.csv`: all current local/ghost vertices, original and base cell IDs,
+  ownership flags, lattice coordinates and nearest-node wall flags.
+- `.gathered.csv`: the last complete mesh gathered by glucose, reconstructed
+  across periodic x. Its iteration is recorded in `.txt`: on gather failure it
+  precedes the failed step; on geometry failure it is the current mesh.
+- `.triangles.csv`: triangle connectivity indexed by cell type.
+
+Coordinates are lattice units relative to the fluid bounding box; multiply by
+`dx` for metres. `wall_node=-1` means the node is outside that rank's local fluid
+array, not that it is a fluid node. Diagnostic snapshots do not synchronize,
+repair or remove vertices. Keep the checkpoint and these files for diagnosis.
+
+For faster isolation of particle loss, add `--diagnose-membranes-only` to a fresh
+run. This advances the same HemoCell dynamics and gathers membranes every step,
+but disables glucose evolution, glucose field output and checkpoints. It is a
+diagnostic run, not a molecular simulation. Use a separate output directory and
+preserve the original output cadence when reproducing a problem: HemoCell's
+`writeOutput()` also synchronizes particles and recalculates forces.
+
+Diagnostic findings and remaining corrections: [DIAGNOSTICS.md](DIAGNOSTICS.md).

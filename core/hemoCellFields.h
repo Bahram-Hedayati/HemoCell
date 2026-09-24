@@ -52,6 +52,10 @@ class HemoCell;
 class HemoCellFields
 {
 public:
+  // Opt-in voxel wall contact for applications requiring closed membranes.
+  // Other examples retain the legacy wall-vertex deletion behavior.
+  bool preserveMembranesAtWalls = false;
+  unsigned long long wallContactCorrections = 0; // owned vertices, since startup
   
   ///Default constructor, needs an palabos lattice, envelope width (lbm units), and hemocell reference
   HemoCellFields(plb::MultiBlockLattice3D<T, DESCRIPTOR> & lattice_, unsigned int particleEnvelopeWidth,HemoCell &);

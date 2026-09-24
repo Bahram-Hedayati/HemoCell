@@ -103,6 +103,7 @@ std::vector<Mesh> GlucoseTransport::gatherMeshes() {
     std::vector<VertexRecord> all(total/sizeof(VertexRecord));
     MPI_Gatherv(local.data(),bytes,MPI_BYTE,all.data(),counts.data(),offsets.data(),MPI_BYTE,0,MPI_COMM_WORLD);
     std::vector<Mesh> meshes;
+    try {
     rootAction([&](){
         std::map<int,std::map<int,VertexRecord>> cells;
         for(const auto& r:all) {
@@ -110,7 +111,15 @@ std::vector<Mesh> GlucoseTransport::gatherMeshes() {
         }
         for(const auto& cell:cells) {
             const int type=cell.second.begin()->second.type;
-            if(int(cell.second.size())!=vertexCounts.at(type))throw std::runtime_error("Incomplete glucose membrane; cannot allow transport through a missing surface");
+            if(int(cell.second.size())!=vertexCounts.at(type)) {
+                std::ostringstream message;
+                message << "Incomplete glucose membrane at iteration " << sim.iter
+                        << ": cell=" << cell.first << " type=" << (*sim.cellfields)[type]->name
+                        << " owned_vertices=" << cell.second.size() << "/" << vertexCounts.at(type)
+                        << "; missing vertex IDs:";
+                for(int v=0;v<vertexCounts.at(type);++v)if(!cell.second.count(v))message << " " << v;
+                throw std::runtime_error(message.str());
+            }
             Mesh mesh;mesh.id=cell.first;mesh.transmitter=(*sim.cellfields)[type]->name=="TX";
             mesh.faces=topology[type];mesh.vertices.resize(vertexCounts[type]);
             for(int v=0;v<vertexCounts[type];++v) {
@@ -122,7 +131,44 @@ std::vector<Mesh> GlucoseTransport::gatherMeshes() {
         int tx=0;for(const auto& m:meshes)tx+=m.transmitter;
         if(tx!=1)throw std::runtime_error("Glucose release requires exactly one complete TX mesh");
     });
+    } catch(const std::exception& error) {
+        writeMembraneDiagnostics(error.what());
+        throw;
+    }
+    if(rank==0){previousMeshes=meshes;gatheredIteration=sim.iter;}
     return meshes;
+}
+void GlucoseTransport::writeMembraneDiagnostics(const std::string& error) {
+    // Called on every rank after rootAction broadcasts the same failure. These
+    // snapshots are read-only: do not synchronize or repair particles here.
+    const std::string stem=outputDirectory+"/membrane_failure."+iterationName(sim.iter);
+    std::ofstream out(stem+".rank"+std::to_string(rank)+".csv");
+    out << std::setprecision(17)
+        << "block,cell_id,base_cell_id,type,vertex,owned,x_lu,y_lu,z_lu,wall_node\n";
+    for(plb::plint id:sim.cellfields->immersedParticles->getLocalInfo().getBlocks()) {
+        auto& pf=sim.cellfields->immersedParticles->getComponent(id);
+        auto& lattice=sim.lattice->getComponent(id);const auto loc=lattice.getLocation();
+        const auto bounds=lattice.getBoundingBox();
+        for(const auto& p:pf.particles) {
+            const int x=int(p.sv.position[0]-loc.x+.5),y=int(p.sv.position[1]-loc.y+.5),z=int(p.sv.position[2]-loc.z+.5);
+            int wall=-1;
+            if(x>=bounds.x0&&x<=bounds.x1&&y>=bounds.y0&&y<=bounds.y1&&z>=bounds.z0&&z<=bounds.z1)
+                wall=lattice.get(x,y,z).getDynamics().isBoundary();
+            out<<id<<","<<p.sv.cellId<<","<<sim.cellfields->base_cell_id(p.sv.cellId)<<","<<int(p.sv.celltype)
+               <<","<<p.sv.vertexId<<","<<pf.isContainedABS(p.sv.position,pf.localDomain)
+               <<","<<p.sv.position[0]-box.x0<<","<<p.sv.position[1]-box.y0<<","<<p.sv.position[2]-box.z0<<","<<wall<<"\n";
+        }
+    }
+    if(rank==0) {
+        std::ofstream message(stem+".txt");message<<error<<"\nGathered mesh iteration: "<<gatheredIteration<<"\nCoordinates are lattice units relative to the fluid bounding box.\n";
+        std::ofstream before(stem+".gathered.csv");before<<std::setprecision(17)<<"cell_id,vertex,x_lu,y_lu,z_lu\n";
+        for(const auto& mesh:previousMeshes)for(std::size_t v=0;v<mesh.vertices.size();++v)
+            before<<mesh.id<<","<<v<<","<<mesh.vertices[v][0]<<","<<mesh.vertices[v][1]<<","<<mesh.vertices[v][2]<<"\n";
+        std::ofstream faces(stem+".triangles.csv");faces<<"type,v0,v1,v2\n";
+        for(std::size_t type=0;type<topology.size();++type)for(const auto& f:topology[type])
+            faces<<type<<","<<f[0]<<","<<f[1]<<","<<f[2]<<"\n";
+        hemo::hlog<<"(Glucose diagnostics) "<<error<<"; snapshots: "<<stem<<std::endl;
+    }
 }
 void GlucoseTransport::initialize() {
     gatherFluid(true);const auto meshes=gatherMeshes();
@@ -133,7 +179,12 @@ void GlucoseTransport::advance() {
 }
 void GlucoseTransport::updateMovingGeometry() {
     gatherFluid(false);const auto meshes=gatherMeshes();
-    rootAction([&](){grid->updateGeometry(meshes);grid->validate();});
+    try {
+        rootAction([&](){grid->updateGeometry(meshes);grid->validate();});
+    } catch(const std::exception& error) {
+        writeMembraneDiagnostics("Geometry update at iteration "+std::to_string(sim.iter)+": "+error.what());
+        throw;
+    }
 }
 void GlucoseTransport::writeOutput() {
     rootAction([&](){

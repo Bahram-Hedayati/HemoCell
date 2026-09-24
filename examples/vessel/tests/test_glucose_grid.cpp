@@ -1,7 +1,10 @@
 #include "glucoseGrid.h"
+#include "surfaceRay.h"
+#include "voxelWallContact.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <numeric>
 #include <stdexcept>
 using namespace vessel;
@@ -97,9 +100,69 @@ void substepsAndZero() {
     g.amount[g.index(8,1,1)]=1;g.transport(v);
     require(g.lastSubsteps>1,"CFL substeps not used");require(std::abs(g.mass()-1)<1e-12,"Substeps lost mass");
 }
+void wallContact() {
+    // Actual failing vertex, immediately before entering solid node (47,38,48).
+    const Vec start{{47.383146577908008,37.499993903119496,47.524176434652446}};
+    const Vec proposed{{start[0]+.003,start[1]+.00002,start[2]}};
+    const auto wall=[](int,int y,int){return y>=38;};
+    bool touched=false;
+    const auto end=hemo::constrainVoxelWallMotion(start,proposed,wall,touched);
+    require(touched && end[1]<37.5,"Wall contact did not preserve fluid-side vertex");
+    require(std::abs(end[0]-proposed[0])<1e-12,"Wall contact lost tangential motion");
+    const auto reverse=hemo::constrainVoxelWallMotion(end,start,wall,touched);
+    require(!touched && std::abs(reverse[1]-start[1])<1e-12,"Wall contact prevents detachment");
+    const auto slab=[](int x,int,int){return x==2;};
+    const auto thin=hemo::constrainVoxelWallMotion(Vec{{0,0,0}},Vec{{4,0,0}},slab,touched);
+    require(touched && thin[0]<1.5,"Swept wall test allowed tunneling");
+    const auto corner=[](int x,int y,int){return x==1 || y==1;};
+    const auto diagonal=hemo::constrainVoxelWallMotion(Vec{{0,0,0}},Vec{{2,2,0}},corner,touched);
+    require(touched && diagonal[0]<.5 && diagonal[1]<.5,"Corner contact allowed penetration");
+    const auto negative=hemo::constrainVoxelWallMotion(Vec{{0,0,0}},Vec{{-2,0,0}},
+        [](int x,int,int){return x<0;},touched);
+    require(touched && negative[0]>-.5,"Negative-direction wall contact failed");
+    const auto periodic=hemo::constrainVoxelWallMotion(Vec{{102.49,0,0}},Vec{{102.51,0,0}},
+        [](int,int,int){return false;},touched);
+    require(!touched && periodic[0]==102.51,"Open periodic seam was treated as a wall");
+    bool rejected=false;
+    try{hemo::constrainVoxelWallMotion(Vec{{2,0,0}},Vec{{0,0,0}},slab,touched);}
+    catch(const std::runtime_error&){rejected=true;}
+    require(rejected,"Invalid initial membrane silently repaired");
+}
+void grazingRays() {
+    // Two triangles sharing a projected diagonal must contribute one crossing,
+    // regardless of winding. Two *different* nearby surfaces must remain two.
+    const Vec a{{8,2,2}},b{{8,6,2}},c{{8,6,6}},d{{8,2,6}};
+    double hit;
+    const int count=surfaceRayIntersection(a,b,c,0,4,4,hit)
+                   +surfaceRayIntersection(a,c,d,0,4,4,hit);
+    const int reversed=surfaceRayIntersection(c,b,a,0,4,4,hit)
+                      +surfaceRayIntersection(d,c,a,0,4,4,hit);
+    require(count==1 && reversed==1,"Shared triangle edge counted twice or missed");
+    GlucoseGrid thin(24,12,12,1,.1,.01);
+    thin.updateGeometry({cube({{8.2,2.2,2.2}},{{8.2+3.56037617e-8,7.2,7.2}})});
+    require(!thin.open[thin.index(8,4,4)][0],"Close paired crossings were merged");
+
+    // Real RBC 179 snapshot from the step-6018 failure. No simulator or MPI is
+    // required: test every mesh ray plus the exact grazing ray in isolation.
+    std::ifstream input(std::string(VESSEL_TEST_FIXTURE_DIR)+"/rbc179_step6018.mesh");
+    require(bool(input),"Missing RBC grazing-ray regression fixture");
+    Mesh body;body.id=179;std::size_t nv=0,nf=0;
+    input>>nv>>nf;require(nv==642 && nf==1280,"Unexpected RBC fixture dimensions");
+    body.vertices.resize(nv);body.faces.resize(nf);
+    for(auto& vertex:body.vertices)input>>vertex[0]>>vertex[1]>>vertex[2];
+    for(auto& face:body.faces)input>>face[0]>>face[1]>>face[2];
+    require(bool(input),"Incomplete RBC regression fixture");
+    std::vector<double> hits;
+    for(const auto& f:body.faces)
+        if(surfaceRayIntersection(body.vertices[f[0]],body.vertices[f[1]],body.vertices[f[2]],
+                                  0,19+1.234e-8L,36+2.345e-8L,hit))hits.push_back(hit);
+    require(hits.size()==2 && std::abs(hits[0]-hits[1])<1e-7,"Grazing ray lost its paired crossings");
+    GlucoseGrid real(103,53,53,5e-7,1e-7,9.2e-10);real.updateGeometry({body});real.validate();
+}
 }
 int main(){try{diffusion();double coarse=advectionError(1),fine=advectionError(2);
     std::cout<<"advection-diffusion L1 errors: "<<coarse<<", "<<fine<<"\n";
     require(fine<coarse*.7,"Transport does not converge with refinement");
-    membranesAndMotion();substepsAndZero();std::cout<<"All glucose grid tests passed\n";return 0;
+    membranesAndMotion();substepsAndZero();wallContact();grazingRays();
+    std::cout<<"All glucose grid tests passed\n";return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<"\n";return 1;}}
